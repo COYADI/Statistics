@@ -1,0 +1,336 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+CMA_season_index = function(data1, season, season_count, period = NULL, show = TRUE){
+    k = length(data1)
+    if (is.null(period)){
+        period = 1:k
+    }
+    y = rep(NA, k)
+    SE = rep(NA, k)
+    SI = vector("double", length = season_count)
+    if(season_count %% 2 == 0){
+        lb = season_count / 2
+        lb2 = lb + 1
+        ub = k - (season_count / 2)
+        cmv_y = vector("double", length = k)
+        for(i in lb:ub){
+            sum_x = 0
+            lb_cmv = i - lb + 1
+            ub_cmv = i + lb
+            for(j in lb_cmv:ub_cmv){
+                sum_x = sum_x + data1[j]
+            }
+            cmv_y[i] = sum_x / season_count
+        }
+        for(i in lb2:ub){
+            y[i] = (cmv_y[i-1] + cmv_y[i]) / 2
+            SE[i] = data1[i] / y[i]
+            SI[season[i]] = SI[season[i]] + SE[i]
+        }
+        SI = SI / ((k / season_count) - 1)
+        sum_SI = sum(SI)
+        SI = SI * season_count / sum_SI
+    }
+    else {
+        lb = ceiling(season_count / 2)
+        ub = k - floor(season_count / 2)
+        for(i in lb:ub){
+            sum_x = 0
+            lb_cmv = i - lb + 1
+            ub_cmv = i + lb - 1
+            for(j in lb_cmv:ub_cmv){
+                sum_x = sum_x + data1[j]
+            }
+            y[i] = sum_x / season_count
+            SE[i] = data1[i] / y[i]
+            SI[season[i]] = SI[season[i]] + SE[i]
+        }
+        SI = SI / ((k / season_count) - 1)
+        sum_SI = sum(SI)
+        SI = SI * season_count / sum_SI
+    }
+    
+    if (show){
+        cat("### Centered Moving Average Result ###\n")
+        print(y)
+        yname = deparse(substitute(data1))
+        plot(period, data1, type = "o", col = "blue", xlab = "period", ylab = yname, main = paste(yname, "against period"))
+        lines(y, type = "o", col = "red")
+
+        cat("\n # # # seasonal index # # # \n",SI,"\n")
+    }
+    
+    return(SI)
+}
+regression_season_index = function(data1, season, season_count, period = NULL, show = TRUE){
+    k = length(data1)
+    if (is.null(period)){
+        period = 1:k
+    }
+    SE = vector("double", length = k)
+    SI = vector("double", length = season_count)
+    t = 0:(k - 1)
+    linearModelVar = lm(data1 ~ t)
+    b0 = coef(linearModelVar)[1]
+    b1 = coef(linearModelVar)[2]
+    y = b0 + b1 * t
+    for(i in 1:k) {
+        SE[i] = data1[i] / y[i]
+        SI[season[i]] = SI[season[i]] + SE[i]
+    }
+    SI = SI / ((k / season_count) - 1)
+    sum_SI = sum(SI)
+    SI = SI * season_count / sum_SI
+    
+    if (show){
+        cat("### Linear Regression Result ###\n")
+        print(y)
+        yname = deparse(substitute(data1))
+        plot(period, data1, type = "o", col = "blue", xlab = "period", ylab = yname, main = paste(yname, "against period"))
+        lines(y, type = "l", col = "red")
+
+        cat("\n # # # seasonal index # # # \n",SI,"\n")
+    }
+    
+    return(SI)
+}
+seasonal_forecast = function(data1, season, season_count, type, period = NULL, show = TRUE){
+    yname = deparse(substitute(data1))
+    k = length(data1)
+    if (is.null(period)){
+        period = 0:(k - 1)
+    }
+    
+    if (type == "indicator"){
+        Q = cbind(period)
+        for (i in 1:(season_count - 1)){
+            Q = cbind(Q, rep(0, k))
+            for (j in 1:k){
+                if (season[j] == i){
+                    Q[,(i + 1)][j] = 1
+                }
+            }
+        }
+        
+        linear_model = lm(data1~Q)
+        print(summary(linear_model))
+
+        b0 = coef(linear_model)[1]
+        b1 = coef(linear_model)[2]
+        b_i = coef(linear_model)[3:(ncol(Q) + 1)]
+        b_i = c(b_i, 0)
+        new_k = k + season_count
+        new_lb = k + 1
+        Q_t = vector("double", length = new_k)
+        for(i in 1:k) {
+            Q_t[i] = season[i]
+        }
+        for(j in new_lb:new_k) {
+            Q_t[j] = j - k
+        }
+        
+        F_t = 0:(new_k - 1)
+        y = b0 + b1 * F_t
+        for (i in 1:new_k){
+            y[i] = y[i] + b_i[Q_t[i]]
+        }
+        
+        if (show){
+            cat("### Intercept:", b0, "\n")
+            cat("### Trend Coefficent:", b1, "\n")
+            cat("### Indicator Coefficents ###\n")
+            print(unname(b_i))
+            cat("### Forecast of", yname, "###\n")
+            plot(period, data1, col = "blue", main = paste(yname, "against period"), xlab = "period", ylab = yname, xlim = range(period, F_t, new_k), ylim = range(data1, y))
+            lines(period, data1, type = "o", col = "blue")
+            lines(F_t, y, type = "o", col = "red")
+        }
+    }
+    else {
+        if (type == "CMA"){
+            SI = CMA_season_index(data1, season, season_count, show = FALSE)
+            forecast_name = "Centered Moving Average Seasonal Index"
+        }
+        else if (type == "regression"){
+            SI = regression_season_index(data1, season, season_count, show = FALSE)
+            forecast_name = "Simple Linear Regression Seasonal Index"
+        }
+        
+        Des_x = vector("double", length = k)
+        for(i in 1:k) {
+            Des_x[i] = data1[i] / SI[season[i]]
+        } 
+        linearModelVar = lm(Des_x~period)
+
+        print(summary(linearModelVar))
+
+        b0 = coef(linearModelVar)[1]
+        b1 = coef(linearModelVar)[2]
+        new_k = k + season_count
+        new_lb = k + 1
+        Q_t = vector("double", length = new_k)
+        SI_Q_t = vector("double", length = new_k)
+        for(i in 1:k) {
+            Q_t[i] = season[i]
+        }
+        for(j in new_lb:new_k) {
+            Q_t[j] = j - k
+        }
+
+        for(i in 1:new_k) {
+            SI_Q_t[i] = SI[Q_t[i]]
+        }
+        F_t = 0:(new_k - 1)
+        des_y = b0 + b1 * F_t
+        y = des_y * SI_Q_t
+    
+        if (show){
+            cat("###", forecast_name, "###\n")
+            print(SI)
+            cat("### Deseasonalized", yname, "###\n")
+            print(Des_x)
+            cat("### Simple Regression line of", yname, "###\n")
+            print(des_y)
+            cat("### Forecast of", yname, "###\n")
+            
+            plot(period, data1, col = "blue", main = paste(yname, "against period"), xlab = "period", ylab = yname, xlim = range(period, F_t, new_k), ylim = range(data1, Des_x, des_y, y))
+            lines(period, data1, type = "o", col = "blue")
+            lines(period, Des_x, type = "o", col = "red")
+            lines(F_t, des_y, type = "o", col = "green")
+            lines(F_t, y, type = "o", col = "black")
+        }
+    }
+    
+    return(y)
+}
+Mean_Absolute_Deviation = function(x, y, s) {
+    k = length(x)
+    Sum_E = 0
+    for(i in s:k){
+        Sum_E = Sum_E + abs(x[i] - y[i])
+    }
+    MAD = Sum_E / (k - s + 1)
+    return(MAD)
+}
+
+Mean_Square_Error = function(x, y, s) {
+    k = length(x)
+    Sum_E = 0
+    for(i in s:k){
+        Sum_E = Sum_E + (x[i] - y[i])^2
+    }
+    MSE = Sum_E / (k - s + 1)
+    return(MSE)
+}
+
+Mean_Absolute_Percentage_Error = function(x, y, s) {
+    k = length(x)
+    Sum_E = 0
+    for(i in s:k){
+        if(x[i] != 0) {
+            Sum_E = Sum_E + abs(x[i] - y[i]) / x[i]
+        }
+        else {
+            Sum_E = Sum_E + abs(x[i] - y[i]) / mean(x)
+        }   
+    }
+    MAPE = Sum_E / (k - s + 1) * 100
+    return(MAPE)
+}
+```
+
+#20.27
+##a.
+```{r}
+library("readxl")
+myfile_ <- read_xlsx("Xr20-27.xlsx")
+period <- myfile_$Period
+quarter <- myfile_$Quarter
+subs <- myfile_$Subscribers
+plot(period, subs, xlab = "period", ylab = "Subscribers", main = "Subscribers at each periods")
+lines(period, subs)
+```
+
+##b
+###applying CMV
+```{r}
+season <- max(quarter)
+CMV_SI <- CMA_season_index(subs, quarter, season, show = F)
+print(CMV_SI)
+CMV_y <- seasonal_forecast(subs, quarter, season, "CMA")
+print(CMV_y)
+```
+
+###applying linear regression
+```{r}
+LR_y <- seasonal_forecast(subs, quarter, season, "regression")
+print(LR_y)
+```
+
+###applying dummy variable
+```{r}
+DV_y <- seasonal_forecast(subs, quarter, season, "indicator")
+print(DV_y)
+```
+
+###compare results
+```{r}
+CMV_MAD <- Mean_Absolute_Deviation(subs, CMV_y, 1)
+CMV_MSE <- Mean_Square_Error(subs, CMV_y, 1)
+CMV_MAPE <- Mean_Absolute_Percentage_Error(subs, CMV_y, 1)
+LR_MAD <- Mean_Absolute_Deviation(subs, LR_y, 1)
+LR_MSE <- Mean_Square_Error(subs, LR_y, 1)
+LR_MAPE <- Mean_Absolute_Percentage_Error(subs, LR_y, 1)
+DV_MAD <- Mean_Absolute_Deviation(subs, DV_y, 1)
+DV_MSE <- Mean_Square_Error(subs, DV_y, 1)
+DV_MAPE <- Mean_Absolute_Percentage_Error(subs, DV_y, 1)
+Error_M <- matrix(nrow = 3, ncol = 3)
+colnames(Error_M) = c("MV", "Linear regression", "Dummy variable")
+rownames(Error_M) = c("MAD", "MSE", "MAPE")
+Error_M[1,1] <- CMV_MAD
+Error_M[1,2] <- LR_MAD
+Error_M[1,3] <- DV_MAD
+Error_M[2,1] <- CMV_MSE
+Error_M[2,2] <- LR_MSE
+Error_M[2,3] <- DV_MSE
+Error_M[3,1] <- CMV_MAPE
+Error_M[3,2] <- LR_MAPE
+Error_M[3,3] <- DV_MAPE
+cat("     ","\n")
+cat("# # # # Error Metrix # # # ","\n")
+print(Error_M)
+```
+according to the matrix, linear regression is the best forecast method.
+
+#20.47
+```{r}
+myfile_ <- read_xlsx("Xr20-47.xlsx")
+period <- myfile_$Period
+quarter <- myfile_$Quarter
+revenue <- myfile_$Revenues
+plot(period, revenue, xlab = "periods", ylab = "revenues", main = "revenues at each periods")
+lines(period, revenue)
+```
+
+#20.48
+there is seasonal effect, which expotential smoothing couldn't handle.
+
+#20.49
+```{r}
+season <- max(quarter)
+seasonal_forecast(revenue, quarter, season, "regression")
+```
+
+#20.50
+```{r}
+regression_season_index(revenue, quarter, season, show = F)
+```
+
+#20.51
+```{r}
+seasonal_forecast(revenue, quarter, season, "regression")
+```
+

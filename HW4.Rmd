@@ -1,0 +1,121 @@
+---
+title: "B06705020"
+output: html_notebook
+---
+##14.61
+#a.
+$H_0$ : $\mu_i$ = $\mu_j$
+
+$H_1$ : $\mu_i$ $\neq$ $\mu_j$
+
+For every pairs of schools.
+
+where $i$ and $j$ are the numbering of schools
+```{r}
+library("readxl")
+library("agricolae")
+myfile_ <- read_xlsx("Xr14-09.xlsx")
+schoolA <- myfile_$`School A`[!is.na(myfile_$`School A`)]
+schoolB <- myfile_$`School B`[!is.na(myfile_$`School B`)]
+schoolC <- myfile_$`School C`[!is.na(myfile_$`School C`)]
+schoolD <- myfile_$`School D`[!is.na(myfile_$`School D`)]
+mydata_ = data.frame(y = c(schoolA, schoolB, schoolC, schoolD), a = factor(c(rep("A", length(schoolA)), rep("B", length(schoolB)), rep("C", length(schoolC)), rep("D", length(schoolD)))))
+model <- aov(y~a, data = mydata_)
+print(LSD.test(model, "a", p.adj = "bonferroni", group = F, console = T))
+```
+We can conclude that school A and school C differs.
+
+#b.
+$H_0$ : $\mu_i$ = $\mu_j$
+
+$H_1$ : $\mu_i$ $\neq$ $\mu_j$
+
+For every pairs of schools.
+
+where $i$ and $j$ are the numbering of schools
+```{r}
+print(HSD.test(model, "a", group = F, console = T))
+```
+
+We can also conclude that school A and school C differs.
+
+##14.65
+#a.
+$H_0$ : $\mu_S$ = $\mu_M$ = $\mu_L$
+
+$H_1$ : Not all the means are equal.
+
+Where $\mu_S$, $\mu_M$ and $\mu_L$ is the average time to receive a promotion in small firms, medium-sized fims, and large firms.
+```{r}
+myfile_ <- read_xlsx("Xr14-65.xlsx")
+small <- myfile_$Small
+medium <- myfile_$Medium
+large <- myfile_$Large
+mydata_ = data.frame(y = c(small, medium, large), a = factor(c(rep("Small", length(small)), rep("Medium", length(medium)), rep("Large", length(large)))))
+summary(model <- aov(y~a, data = mydata_))
+```
+the p-value is 0.0286, so we reject the null hypothesis in favor of the alternative hypothesis, which means there's enough evidence to say that the average time to receive a promotion differs with the size of a firm.
+
+#b.
+$H_0$ : $\mu_i$ = $\mu_j$
+
+$H_1$ : $\mu_i$ $\neq$ $\mu_j$
+
+For every pairs of firms.
+
+where $i$ and $j$ are the size of firms
+```{r}
+print(HSD.test(model, "a", group = F, console = T))
+```
+We can find out that large firm and small firm differs in time to receive a promotion.
+Due to the result, we can find out the answer is v.
+
+##14.89
+$H_0$ : $\mu_P$ = $\mu_M$ = $\mu_F$
+
+$H_1$ : Not all the means are equal.
+
+Where $\mu_P$, $\mu_M$ and $\mu_F$ is the average errors when measuring the height of the professor, the male student, and the female student.
+```{r}
+myfile_ <- read_xlsx("Xr14-89.xlsx")
+pro <- myfile_$Professor
+male <- myfile_$`Male student`
+female <- myfile_$`Female student`
+block <- rep(1:4, 3)
+mydata_ = data.frame(y = c(pro, male, female), treatments = factor(c(rep("pro", length(pro)), rep("male", length(male)), rep("female", length(female)))), block = factor(block))
+summary(model <- aov(y~treatments + block, data = mydata_))
+```
+the p-value between treatment is 0.05123, so we can't reject the null hypothesis, which means we have no enough evidence to prove the average arrors measuring the height of the professor, the male student, and the female student differs.
+
+##14.95
+$H_0$ : $\mu_Su$ = $\mu_M$ = $\mu_Tu$ = $\mu_W$ = $\mu_Th$ = $\mu_F$ = $\mu_Sa$
+
+$H_1$ : Not all the means are equal.
+
+where $\mu_i$ is the average amount of time teenagers spent listening to music on the radio last week on day $i$.
+```{r}
+myfile_ <- read_xlsx("Xr14-95.xlsx")
+sun <- myfile_$Sunday
+mon <- myfile_$Monday
+tue <- myfile_$Tuesday
+wed <- myfile_$Wednesday
+thu <- myfile_$Thursday
+fri <- myfile_$Friday
+sat <- myfile_$Saturday
+block <- rep(1:200, 7)
+mydata_ = data.frame(y = c(sun, mon, tue, wed, thu, fri, sat), treatments = factor(c(rep("sun", length(sun)), rep("mon", length(mon)), rep("tue", length(tue)), rep("wed", length(wed)), rep("thu", length(thu)), rep("fri", length(fri)), rep("sat", length(sat)))), block = factor(block))
+summary(model <- aov(y~treatments + block, data = mydata_))
+```
+the p-value of treatments is 5.14e-13, so we reject the null hypothesis in favor of the alternative hypothesis, which means we have enough evidence to say that the average amount of time teenagers spent listening to music on the radio differs in days of a week.
+
+$H_0$ : $\mu_i$ = $\mu_j$
+
+$H_1$ : $\mu_i$ $\neq$ $\mu_j$
+
+For every pairs of days.
+
+where $i$ and $j$ are the number of day.
+```{r}
+print(HSD.test(model, "treatments", group = F, console = T))
+```
+We can find out that Saturday differs from every other day in a week, and Friday differs from Monday, Saturday, Sunday, and Wednesday.

@@ -1,0 +1,209 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+#15.79
+$H_0$ : the sample data was drawn from a normally distributed population.
+
+$H_1$ : the sample data was not drawn from a normally distributed population.
+```{r}
+expect <- c(pnorm(-1.5), pnorm(-0.5) - pnorm(-1.5), pnorm(0.5) - pnorm(-0.5), pnorm(1.5) - pnorm(0.5), pnorm(-1.5))
+sample <- c(10, 18, 48, 16, 8)
+expect <- expect * sum(sample)
+Z <- 0
+for(i in 1 : length(sample))
+{
+  temp <- ((sample[i] - expect[i])^2) / expect[i]
+  Z <- Z + temp
+}
+df <- length(sample) - 3
+pvalue <- 1 - pchisq(Z, df = df)
+cat("p-value = ", pvalue)
+```
+the p-value is 0.01283998, so we  reject the null hypothesis in favor of the alternative hypothesis, which means we can conclude that the sample data wasn't drawn from a normally distributed population.
+
+#15.85
+$H_0$ : the sample data of this year was drawn from a normally distributed population.
+
+$H_1$ : the sample data of this year was not drawn from a normally distributed population.
+
+$H_0$ : the sample data of last year was drawn from a normally distributed population.
+
+$H_1$ : the sample data of last year was not drawn from a normally distributed population.
+```{r}
+library("readxl")
+myfile_ <- read_xlsx("Xr13-95.xlsx")
+mean_1 <- mean(myfile_$`This Year`)
+mean_2 <- mean(myfile_$`Last Year`)
+sd_1 <- sd(myfile_$`This Year`)
+sd_2 <- sd(myfile_$`Last Year`)
+groups <- nrow(myfile_) / 5
+freq_1 <- c(rep(0, groups))
+freq_2 <- c(rep(0, groups))
+breakpoints <- c()
+for(i in 0:groups + 1)
+{
+  breakpoints[i] = qnorm((1 / groups) * (i - 1))
+}
+for(i in 1:groups)
+{
+  for(j in 1:nrow(myfile_))
+  {
+    if((myfile_$`This Year`[j] - mean_1) / sd_1 > breakpoints[i] && (myfile_$`This Year`[j] - mean_1) / sd_1 < breakpoints[i + 1])
+    {
+      freq_1[i] = freq_1[i] + 1
+    }
+    if((myfile_$`Last Year`[j] - mean_2) / sd_2 > breakpoints[i] && (myfile_$`Last Year`[j] - mean_2) / sd_2 < breakpoints[i + 1])
+    {
+      freq_2[i] = freq_2[i] + 1
+    }
+  }
+}
+
+expect <-  c(rep(5, groups))
+Z_1 <- 0
+Z_2 <- 0
+for(i in 1 : length(freq_1))
+{
+  temp_1 <- ((freq_1[i] - expect[i])^2) / expect[i]
+  Z_1 <- Z_1 + temp_1
+  temp_2 <- ((freq_2[i] - expect[i])^2) / expect[i]
+  Z_2 <- Z_2 + temp_2
+}
+df_1 <- length(freq_1) - 3
+df_2 <- length(freq_2) - 3
+pvalue_1 <- 1 - pchisq(Z_1, df = df_1)
+cat("p-value for this year = ", pvalue_1, "\n")
+pvalue_2 <- 1 - pchisq(Z_2, df = df_2)
+cat("p-value for last year = ", pvalue_2)
+```
+the p-value for this year = 0.9448774, so we can't reject the null hypothesis, which means the data of this year is normally distributed.
+
+the p-value for last year = 0.440773, so we can't reject the null hypothesis, which means the data of this year is normally distributed.
+
+#19.15
+##a.
+$H_0$ : The locations of the two populations are the same.
+
+$H_1$ : The location of the population i are at the left of the population j.
+
+where the population i is the likelihood that shoppers to buy the product before changing the product's name and j the likelihood that shoppers to buy the product after.
+```{r}
+myfile_ <- read_xlsx("Xr19-15.xlsx")
+myfile_ <- as.data.frame(myfile_)
+alldata = sort(c(myfile_[,1], myfile_[,2]))
+tmpdf = data.frame(raw=alldata, rank=1:length(alldata))
+avgrank = aggregate(tmpdf, by = list(tmpdf$raw), mean)
+avgrank$Group.1=NULL
+
+samp1=data.frame(raw=myfile_[,2])
+samp1=merge(samp1, avgrank)
+T=sum(samp1$rank)
+n1=nrow(myfile_)
+n2=nrow(myfile_)
+ET=n1*(n1+n2+1)/2 
+SigmaT=sqrt(n1*n2*(n1+n2+1)/12)
+
+z=(T-ET)/SigmaT
+pvalue = 1-pnorm(z)
+cat("E(T)=", ET, "\n")
+cat("Sigma_T=", SigmaT, "\n")
+cat("z value=", z, "\n")
+cat("p-value=", pvalue, '\n')
+```
+the p-value is 2.502448e-06, so we reject the null hypothesis in favor of the alternative hypothesis, which means the likelihood that shoppers to buy changed as the product's name changed.
+
+##b.
+Dear manager:
+
+Due to my statistical discover, I found out that using the product name "dried plums" is effective to appeal the shoppers to buy the product, so please change the product name as soon as possible.
+
+#19.45
+##a.
+$H_0$ : The locations of the two populations are the same.
+
+$H_1$ : The location of the population i are at the right of the population j.
+
+where the population i is the scores of European car and the population j is the scores of North American car.
+```{r}
+myfile_ <- read_xlsx("Xr19-45.xlsx")
+diff = myfile_$European - myfile_$American
+
+neg <- 0
+pos <- 0
+
+for(i in 1:length(diff))
+{
+  if(diff[i] > 0)
+  {
+    pos = pos + 1
+  }else if(diff[i] < 0)
+  {
+    neg = neg + 1
+  }
+}
+
+n <- (pos + neg)
+
+z=(pos - 0.5 * n) / (0.5 * sqrt(n))
+pvalue = 1 - pnorm(z)
+
+cat("p-value=", pvalue, '\n')
+```
+the p-value is 0.01090506, so we reject the null hypothesis in favor of the alternative hypothesis, which means the scores between the European car and the North American cars differs.
+
+##b.
+Because at example 19-4, it uses the sign test rather than the wilcoxon signed rank sum test. Though both of them is to compare paired samples, the wilcoxon signed rank sum test are more precise.
+
+#19.57
+##a.
+###Required Condition.
+check normality
+$H_0$ : The population is normal.
+
+$H_1$ : The population isn't normal.
+```{r}
+myfile_ <- read_xlsx("Xr19-57.xlsx")
+data <- data.frame(y = c(myfile_$`PG-13`, myfile_$R), a = factor(c(rep("P", length(myfile_$`PG-13`)), rep("R", length(myfile_$R)))))
+myfile_ <- as.data.frame(myfile_)
+myfile_$diff = myfile_[,1] - myfile_[,2]
+myfile_$absdiff = abs(myfile_$diff)
+
+myfile_ <- myfile_[-17, ]
+
+shapiro.test(myfile_$diff)
+```
+The p-values is < 0.05, so we reject the null hypothesis in favor of the alternative hypothesis, which assume that the population isn't a normall distribution. 
+
+###Main Question.
+$H_0$ : The locations of the two populations are the same.
+
+$H_1$ : The location of the population i are at the left of the population j.
+
+where the population i is the ratings at PG-13 and the population j is the ratings at R.
+```{r}
+alldata = sort(myfile_$absdiff)
+tmpdf = data.frame(raw=alldata, rank=1:length(alldata))
+avgrank = aggregate(tmpdf, by=list(tmpdf$raw), FUN=mean)
+avgrank$Group.1=NULL
+
+ind1 = myfile_$diff > 0
+samp1=data.frame(raw=myfile_[ind1,"diff"])
+samp1=merge(samp1, avgrank)
+T=sum(samp1$rank)
+n=nrow(myfile_)
+ET=n*(n+1)/4 
+SigmaT=sqrt(n*(n+1)*(2*n+1)/24)
+
+z=(T-ET)/SigmaT
+pvalue = pnorm(z)
+cat("E(T)=", ET, "\n")
+cat("Sigma_T=", SigmaT, "\n")
+cat("z value=", z, "\n")
+cat("p-value=", pvalue, '\n')
+```
+the p-value is 9.092718e-07, so we reject the null hypothesis in favor of the alternative hypothesis, which means the ratings at PG-13 and R differs.
+
+##b.
+It is statistically proved that movies added sexual explicit scenes will sell better than those original ones.
+

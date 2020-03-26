@@ -1,0 +1,284 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+standarized_errors <- function(y, x) {
+   n <- length(y)
+   linearModelVar <- lm(y ~ x)
+   a <- coef(linearModelVar)[1]
+   b <- coef(linearModelVar)[2]
+   se <- sigma(linearModelVar)
+   x_mean <- mean(x)
+   x_var <- var(x)
+   h <- vector("double", length = n)
+   y_p <- vector("double", length = n)
+   Error <- vector("double", length = n)
+   Standard_E <- vector("double", length = n)
+   for(i in 1:n) {
+      h[i] <- (1/n) + (x[i] - x_mean)^2 / (x_var * (n - 1))
+      y_p[i] <- a + b * x[i]
+      Error[i] <- y[i] - y_p[i]
+      Standard_E[i] <- Error[i] / (se * sqrt(1 - h[i]))
+      }
+    SEh <-cbind(Standard_E,h)
+}
+standarized_errors_MR <- function(y, x) {
+   n <- length(y)
+   k <- ncol(x)
+   x1 <- vector("double", length = n)
+   for(j in 1:n) {
+      x1[j] <- 1
+      }
+   Matrix_X <- cbind(x1, x)
+   Matrix_Y <- cbind(y)
+   Matrix_H <- Matrix_X%*%solve(t(Matrix_X)%*%Matrix_X)%*%t(Matrix_X)
+   Matrix_YP <- Matrix_H%*%Matrix_Y
+   y_p <- Matrix_YP[,1]
+   h <- vector("double", length = n)
+   D <- vector("double", length = n)
+   Error <- vector("double", length = n)
+   Standard_E <- vector("double", length = n)
+   se <- sqrt(sum((y - y_p)^2)/(n - k - 1))
+   for(i in 1:n) {
+      h[i] <- Matrix_H[i,i]
+      Error[i] <- y[i] - y_p[i]
+      Standard_E[i] <- Error[i] / (se * sqrt(1 - h[i]))
+      D[i] <- (y[i] - y_p[i])^2 * h[i] / ((k - 1) * se^2 * (1 - h[i])^2)
+      }
+    SEhD <- cbind(Standard_E,h,D)
+   return(SEhD)
+}
+Durbin_Watson_Test <- function(x) {
+   x_square_sum <- sum(x*x)
+   n <- length(x)
+   x_d <- vector("double", length = n)
+   x_d[1] = 0
+   for(j in 2:n) {
+      x_d[j] <- x[j] - x[j - 1]
+      }
+   d <- sum(x_d*x_d) / x_square_sum
+    return(d)
+}
+```
+
+#18.17
+##a.
+```{r}
+library("readxl")
+myfile_ <- read_xlsx("Xr18-17.xlsx")
+attendance <- myfile_$Attendance
+yesterday <- myfile_$`Yest Att`
+I1 <- myfile_$I1
+I2 <- myfile_$I2
+I3 <- myfile_$I3
+plot(yesterday, attendance, xlab = "yesterday's attendance", ylab = "attendance", main = "attendance against yesterday's attendance")
+abline(lm(attendance~yesterday))
+plot(I1, attendance, xlab = "weekend = 1, else = 0", ylab = "attendance", main = "attendance against weekend or not")
+abline(lm(attendance~I1))
+plot(I2, attendance, xlab = "predicted sunny = 1, else = 0", ylab = "attendance", main = "attendance against predicted sunny or not")
+abline(lm(attendance~I2))
+plot(I3, attendance, xlab = "predicted rainy = 1, else = 0", ylab = "attendance", main = "attendance against predicted rainy or not")
+abline(lm(attendance~I3))
+data_attendance_affected <- cbind(yesterday, I1, I2, I3)
+model <- lm(attendance ~ data_attendance_affected)
+summary(model)
+summary(aov(model))
+```
+the regression is y = $3490.4666x_0$ + $0.36855x_1$ + $1623.09578x_2$ + $733.46463x_3$ - $765.54291x_4$
+
+##b.
+$H_0$ : $\beta_1$ = $\beta_2$ = $\beta_3$ = $\beta_4$ = 0
+
+$H_1$ : at least one of all parameters are not equal to 0
+
+According to the ANOVA table, since the p-va;ue is 9.28e-09, the model is valid
+
+##c.
+$H_0$ : $\beta_i$ = 0
+
+$H_1$ : $\beta_i$ $\neq$ 0
+
+i = 3, 4.
+
+According to the t-test of $x_3$ and $x_4$, the p-values are all > 0.05, so we don't reject the null hypothesis, we can not conclude that weather is a factor in determining attendance.
+
+##d.
+$H_0$ : $\beta_i$ = 0
+
+$H_1$ : $\beta_i$ $\neq$ 0
+
+i = 2.
+
+According to the t-test of $x_2$, the p-value is 0.00226, so we can conclude the weekend attendance is larger than weekday attendance.
+
+#18.21
+##a.
+```{r}
+myfile_ <- read_xlsx("Xr18-21.xlsx")
+repair <- myfile_$Repairs
+age <- myfile_$Age
+machine <- myfile_$Machine
+weldingD <- machine == 1
+weldingR <- repair[weldingD]
+weldingA <- age[weldingD]
+latheD <- machine == 2
+latheR <- repair[latheD]
+latheA <- age[latheD]
+stampD <- machine == 3
+stampR <- repair[stampD]
+stampA <- age[stampD]
+plot(weldingA, weldingR, xlab = "Age of machine", ylab = "repair cost", main = "Repair cost against age of machine", xlim = range(weldingA, latheA, stampA), ylim = range(weldingR, latheR, stampR))
+abline(lm(weldingR ~ weldingA))
+points(latheA, latheR, col = "blue")
+abline(lm(latheR ~ latheA), col = "blue")
+points(stampA, stampR, col = "red")
+abline(lm(stampR ~ stampA), col = "red")
+data_repair_affected <- cbind(age, machine)
+model <- lm(repair ~ data_repair_affected)
+summary(model)
+summary(aov(model))
+```
+```{r}
+plot(age, repair, xlab = "Age of machine", ylab = "repair cost", main = "Repair cost against age of machines")
+lines(lowess(age, repair))
+```
+the model is y = $\beta_0$ + $\beta_1x_1$ + $\beta_2x_1^2$ + $\beta_3x_2$ + $\beta_4x_3$ + $\epsilon$
+
+y is the repair cost.
+
+$x_1$ is the age of machine.
+
+$x_2$ is 1 if the machine is a welding machine, 0 otherwise.
+
+$x_3$ is 1 if the machine is a lathe machine, 0 otherwise.
+
+##b.
+```{r}
+M_1 <- vector(mode = "numeric", length = length(repair))
+M_1[weldingD] = 1
+M_2 <- vector(mode = "numeric", length = length(repair))
+M_2[latheD] = 1
+age_sq <- age * age
+data_repair_affected <- cbind(age, age_sq, M_1, M_2)
+model <- lm(repair ~ data_repair_affected)
+summary(model)
+summary(aov(model))
+```
+y = -85.93 + 6.351$x_1$ - 0.01583$x_1^2$ - 29.72$x_2$ - 207.1$x_3$
+
+welding machine has 29.72 less repair cost, and lathe machine has 207.1 less repair cost.
+
+##c.
+$H_0$ : $\beta_i$ = 0
+
+$H_1$ : $\beta_i$ $\neq$ 0
+
+i = 3.
+
+No, the p-value of t-test is 0.17864, so we can't conclude welding machine has less repair cost.
+
+#18.39
+```{r}
+myfile_ <- read_xlsx("Xr17-17.xlsx")
+library("olsrr")
+margin <- myfile_$Margin
+number <- myfile_$Number
+nearest <- myfile_$Nearest
+space <- myfile_$`Office Space`
+enroll <- myfile_$Enrollment
+income <- myfile_$Income
+distance <- myfile_$Distance
+data_margin_affected <- data.frame(cbind(number, nearest, space, enroll, income, distance)) 
+model <- lm(margin ~ number + nearest + space + enroll + income + distance, data = data_margin_affected)
+ols_step_both_p(model, details = T)
+```
+the regression is 
+
+margin = 41.273 + 0.02office space - 0.008number + 0.399income + 1.654nearest
+
+##b.
+```{r}
+data_margin_affected <- cbind(number, nearest, space, enroll, income, distance)
+model <- lm(margin ~ data_margin_affected)
+summary(model)
+summary(aov(model))
+```
+the validity of the model is increased, but the R-squared has decreased.
+
+#18.49
+##a.
+```{r}
+myfile_ <- read_xlsx("Xr18-49.xlsx")
+CL <- myfile_$`Pct Dep`
+temperature <- myfile_$Temperature
+PH <- myfile_$`PH Level`
+weather <- myfile_$Weather
+plot(temperature, CL, xlab = "temperature", ylab = "percentage of Cl depletion over 8 hours", main = "Percentage of Cl depletion over 8 hours against temperature")
+lines(lowess(temperature, CL))
+plot(PH, CL, xlab = "pH level", ylab = "percentage of Cl depletion over 8 hours", main = "Percentage of Cl depletion over 8 hours against pH level")
+lines(lowess(PH, CL))
+```
+the regression model = 
+
+y = $\beta_0$ + $\beta_1x_1$ + $\beta_2x_2$ + $\beta_3x_2^2$ + $\beta_4x_3$ + $\beta_5x_4$ + $\epsilon$
+
+y is the percentage of Cl depletion over 8 hours.
+
+$x_1$ is the temperature of the water.
+
+$x_2$ is the pH level of the water.
+
+$x_3$ is 1 if it's mainly cloudy, 0 otherwise.
+
+$x_4$ is 1 if it's sunny, 0 otherwise.
+
+##b.
+```{r}
+cloudyD <- weather == 1
+sunnyD <- weather == 2
+cloudy <- vector(mode = "numeric", length = length(CL))
+sunny <- vector(mode = "numeric", length = length(CL))
+cloudy[cloudyD] = 1
+sunny[sunnyD] = 1
+PH_sq <- PH * PH
+data_CL_affected <- cbind(temperature, PH, PH_sq, cloudy, sunny)
+model <- lm(CL ~ data_CL_affected)
+summary(model)
+summary(aov(model))
+```
+the regression is percentage of Cl depletion over 8 hours = 1002.77452 + $0.19376x_1$ - $265.61190x_2$ + $17.75794x_2^2$ - $1.06857x_3$ + $1.15714x_4$
+
+##c.
+$H_0$ : $\beta_1$ = $\beta_2$ = $\beta_3$ = $\beta_4$ = $\beta_5$ = 0
+
+$H_1$ : at least one of all parameters are not equal to 0
+
+According to the ANOVA table, since the p-value is extremely small (<2.2e-16), the model is valid.
+
+##d.
+$H_0$ : $\beta_i$ = 0
+
+$H_1$ : $\beta_i$ $\neq$ 0
+
+i = 1.
+
+the p-value is 1.24e-10, so we can conclude that the higher the temperature of the water causes the quicker Cl depletion.
+
+##e.
+$H_0$ : $\beta_i$ = 0
+
+$H_1$ : $\beta_i$ $\neq$ 0
+
+i = 2, 3.
+
+the p-values are all < 0.05, and the plot is the same as the belief.
+
+##f.
+$H_0$ : $\beta_i$ = 0
+
+$H_1$ : $\beta_i$ $\neq$ 0
+
+i = 4, 5.
+
+since the p-value are all not < 0.05, so we conclude weather is not a factor in Cl depletion.

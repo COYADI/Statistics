@@ -1,0 +1,282 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+#16.83
+##a.
+```{r}
+library("readxl")
+myfile_ <- read_xlsx("Xr16-07.xlsx")
+price <- myfile_$Price
+floor <- myfile_$Floor
+model <- lm(price~floor)
+data <- data.frame(floor = 20)
+predict(model, data, interval = "predict", level = 0.95)
+```
+the selling price interval predicted with 95% confidence of a 1200 sq.ft condominium on the 20 floor is [180.004, 259.3586]
+
+##b.
+```{r}
+data <- data.frame(floor = 15)
+predict(model, data, interval = "confidence", level = 0.99)
+```
+the average selling price interval predicted with 99% confidence of a 1200 sq.ft condominium on the 15 floor is [204.8826, 219.8261]
+
+#16.89
+```{r}
+myfile_ <- read_xlsx("Xr16-13.xlsx")
+price <- myfile_$Price
+hours <- myfile_$Hours
+model <- lm(price~hours)
+data <- data.frame(hours = 400)
+predict(model, data, interval = "predict", level = 0.99)
+```
+the selling price interval predicted with 99% confidence of a 1999 24-ft. Sea Ray cruiser with 400 hours engine use is [23.32652, 34.34993]
+
+#16.97
+```{r}
+myfile_ <- read_xlsx("Xr16-47.xlsx")
+days <- myfile_$Days
+age <- myfile_$Age
+model <- lm(days~age)
+data <- data.frame(age = 70)
+predict(model, data, interval = "confidence", level = 0.9)
+```
+the interval predicted with 90% confidence of the mean number of days watching the national news on television for the population of 70-year-old is [1.891772, 2.103492]
+
+#16.119
+```{r}
+myfile_ <- read_xlsx("Xr16-07.xlsx")
+floor <- myfile_$Floor
+price <- myfile_$Price
+model <- lm(price~floor)
+standarized_errors <- function(y, x) {
+   n <- length(y)
+   linearModelVar <- lm(y ~ x)
+   a <- coef(linearModelVar)[1]
+   b <- coef(linearModelVar)[2]
+   se <- sigma(linearModelVar)
+   x_mean <- mean(x)
+   x_var <- var(x)
+   h <- vector("double", length = n)
+   y_p <- vector("double", length = n)
+   Error <- vector("double", length = n)
+   Standard_E <- vector("double", length = n)
+   for(i in 1:n) {
+      h[i] <- (1/n) + (x[i] - x_mean)^2 / (x_var * (n - 1))
+      y_p[i] <- a + b * x[i]
+      Error[i] <- y[i] - y_p[i]
+      Standard_E[i] <- Error[i] / (se * sqrt(1 - h[i]))
+      }
+    SEh <-cbind(Standard_E,h)
+}
+SE <- standarized_errors(price, floor)[,1]
+h <- standarized_errors(price, floor)[,2]
+```
+##a.
+$H_0$ : the error is normally distributed.
+
+$H_1$ : the error is not normally distributed.
+```{r}
+shapiro.test(SE)
+```
+the p-value is 0.7527, the errors are normally distributed.
+
+##b.
+$H_0$ : the errors has homoscedasticity
+
+$H_1$ : the errors has heteroscedasticity
+```{r}
+a <- coef(model)[1]
+b <- coef(model)[2]
+Price_p <- vector("double", length = length(price))
+for(i in 1:length(price)) {
+   Price_p[i] <- a + b * floor[i]
+   }
+plot(x = Price_p, y = SE, xlab = "Predicted Price", ylab = "Standardized Error", main = "Price vs Error")
+```
+Do not rejected $H_0$. We can assume that the variation is constant and the mean is around 0.
+
+##outliers and influential observations
+```{r}
+outliers <- abs(SE) > 2
+print(outliers)
+```
+sample 3, 21 and 50 are outliers.
+```{r}
+io <- h > 6 / length(floor)
+print(io)
+```
+there are no influential observations.
+
+#16.125
+```{r}
+myfile_ <- read_xlsx("Xr16-13.xlsx")
+price <- myfile_$Price
+hours <- myfile_$Hours
+model <- lm(price~hours)
+SE <- standarized_errors(price, hours)[,1]
+h <- standarized_errors(price, hours)[,2]
+```
+
+##check if error is normally distributed
+$H_0$ : the error is normally distributed.
+
+$H_1$ : the error is not normally distributed.
+```{r}
+shapiro.test(SE)
+```
+the p-value is 0.9057, so the error is normally distributed.
+
+##check if heteroscedasticity is a problem
+$H_0$ : the errors has homoscedasticity
+
+$H_1$ : the errors has heteroscedasticity
+```{r}
+a <- coef(model)[1]
+b <- coef(model)[2]
+Price_p <- vector("double", length = length(price))
+for(i in 1:length(price)) {
+   Price_p[i] <- a + b * floor[i]
+   }
+plot(x = Price_p, y = SE, xlab = "Predicted Price", ylab = "Standardized Error", main = "Price vs Error")
+```
+Do not rejected $H_0$. We can assume that the variation is constant and the mean is around 0.
+
+##check if randomness exists
+$H_0$ : randomness exists
+
+$H_1$ : randomness doesn't exist
+```{r}
+library("randtests")
+runs.test(SE)
+```
+the p-value is 0.2976, so we can say the randomness exists.
+
+##outliers and influential observations
+```{r}
+outliers <- abs(SE) > 2
+print(outliers)
+```
+sample 18, 25 and 33 are outliers.
+```{r}
+io <- h > 6 / length(hours)
+print(io)
+```
+the are no influential observations.
+
+#16.137
+```{r}
+myfile_ <- read_xlsx("Xr16-137.xlsx")
+fund <- myfile_$Fund
+gold <- myfile_$Gold
+model <- lm(fund~gold)
+SE <- standarized_errors(fund, gold)[,1]
+h <- standarized_errors(fund, gold)[,2]
+```
+##plot the scatter diagram
+```{r}
+plot(x = gold, y = fund, xlab = "Price of gold", ylab = "Value of fund", main = "Value of fund against price of gold")
+abline(model)
+```
+
+##purpose a statistic model
+the model is y = $\beta_0$ + $\beta_1$ * x + $\epsilon$
+
+where y is the value of fund, x is the price of gold and $\epsilon$ is the error.
+
+##fit the model
+```{r}
+print(summary(model))
+```
+the model is y = -20.20931 + 0.08510 * x + $\epsilon$
+
+##residual analysis
+###check outliers
+```{r}
+outliers <- abs(SE) > 2
+print(outliers)
+```
+sample 8 and 28 are the outliers.
+
+###check influential observations
+```{r}
+io <- h > 6 / length(gold)
+print(io)
+```
+sample 19 is a influental observation.
+
+###check if error is normally distributed
+$H_0$ : the error is normally distributed.
+
+$H_1$ : the error is not normally distributed.
+```{r}
+shapiro.test(SE)
+```
+the p-value is 0.08612, so the error is normally distributed.
+
+##check if heteroscedasticity is a problem
+$H_0$ : the errors has homoscedasticity
+
+$H_1$ : the errors has heteroscedasticity
+```{r}
+a <- coef(model)[1]
+b <- coef(model)[2]
+Price_p <- vector("double", length = length(gold))
+for(i in 1:length(gold)) {
+   Price_p[i] <- a + b * gold[i]
+   }
+plot(x = Price_p, y = SE, xlab = "Predicted value of fund", ylab = "Standardized Error", main = "Value of fund vs Error")
+```
+Do not rejected $H_0$. We can assume that the variation is constant and the mean is around 0.
+
+##check if randomness exists
+$H_0$ : randomness exists
+
+$H_1$ : randomness doesn't exist
+```{r}
+runs.test(SE)
+```
+the p-value is 0.4411, so the randomness exists.
+
+##assess the fitted model
+```{r}
+mean(fund)
+summary(model)
+```
+the standardized error is 0.5575, which is small compared to the mean of y (11.69714), so we can say the model fits well.
+
+###interpretaion of R-squared
+62.87% of the variation in the value of fund is explained by the variation in gold price. the rest remains unexplained by this model.
+
+###interpretation of R
+```{r}
+cor(fund, gold)
+```
+the R value is 0.7929004, it has a very strong relationship between the value of fund and the gold price.
+
+###t-test for the model
+$H_0$ : $\beta_1$ = 0
+
+$H_1$ : $\beta_1$ $\neq$ 0
+
+the p-value is 4.89e-07, so we can say there is overwhelming evidence to infer that the price of gold is an important variable in the linear regression model of the value of fund.
+
+##interpretation
+the $\beta_0$ is -20.20931, but since the value of fund shouldn't be negative, this is an incorrect assessment.
+
+the $\beta_1$ is 0.08510, means that when the price of gold goes up by 1, the value of fund goes up by 0.08510
+
+##apply for prediction
+###Predict with 95% confidence the value of fund with gold of 370 dollars.
+```{r}
+data <- data.frame(gold = 370)
+predict(model, data, interval = "predict", level = 0.95)
+```
+the interval of 95% confidence the value of fund with gold of 370 dollars is [10.10353, 12.45042].
+
+###Estimate with 95% confidence the average fund price with gold of 370 dollars.
+```{r}
+predict(model, data, interval = "confidence", level = 0.95)
+```
+the interval of 95% confidence the average fund price with gold of 370 dollars is [11.0243, 11.52964].

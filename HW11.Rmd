@@ -1,0 +1,342 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+#17.3
+##Regression diagnostics
+###multicollinearity
+```{r}
+library("readxl")
+myfile_ <- read_xlsx("Xr17-03.xlsx")
+drywalls <- myfile_$Drywall
+permits <- myfile_$Permits
+mortgage <- myfile_$Mortgage
+apartment <- myfile_$`A Vacancy`
+office <- myfile_$`O Vacancy`
+data_drywall_affected <- cbind(permits, mortgage, apartment, office)
+model <- lm(drywalls ~ data_drywall_affected)
+summary(model)
+summary(aov(model))
+cor(data_drywall_affected)
+```
+Since the absolute values of the correlations between the independent variables didn't exceed 0.7, so we conclude the problems of multicollinearity doesn't exists.
+
+###Autocorrelation
+To test if problem of autocorrelation exists, we conduct two sided durbin watson test.
+$H_0$ : The data are not first-order correlated
+
+$H_1$ :The data are first-order correlated
+```{r}
+standarized_errors_MR <- function(y, x) {
+   n <- length(y)
+   k <- ncol(x)
+   x1 <- vector("double", length = n)
+   for(j in 1:n) {
+      x1[j] <- 1
+      }
+   Matrix_X <- cbind(x1, x)
+   Matrix_Y <- cbind(y)
+   Matrix_H <- Matrix_X%*%solve(t(Matrix_X)%*%Matrix_X)%*%t(Matrix_X)
+   Matrix_YP <- Matrix_H%*%Matrix_Y
+   y_p <- Matrix_YP[,1]
+   h <- vector("double", length = n)
+   D <- vector("double", length = n)
+   Error <- vector("double", length = n)
+   Standard_E <- vector("double", length = n)
+   se <- sqrt(sum((y - y_p)^2)/(n - k - 1))
+   for(i in 1:n) {
+      h[i] <- Matrix_H[i,i]
+      Error[i] <- y[i] - y_p[i]
+      Standard_E[i] <- Error[i] / (se * sqrt(1 - h[i]))
+      D[i] <- (y[i] - y_p[i])^2 * h[i] / ((k - 1) * se^2 * (1 - h[i])^2)
+      }
+    SEhD <- cbind(Standard_E,h,D)
+   return(SEhD)
+}
+Durbin_Watson_Test <- function(x) {
+   x_square_sum <- sum(x*x)
+   n <- length(x)
+   x_d <- vector("double", length = n)
+   x_d[1] = 0
+   for(j in 2:n) {
+      x_d[j] <- x[j] - x[j - 1]
+      }
+   d <- sum(x_d*x_d) / x_square_sum
+    return(d)
+}
+
+myfile_ <- read_xlsx("Xr17-03.xlsx")
+drywalls <- myfile_$Drywall
+permits <- myfile_$Permits
+mortgage <- myfile_$Mortgage
+apartment <- myfile_$`A Vacancy`
+office <- myfile_$`O Vacancy`
+data_drywall_affected <- cbind(permits, mortgage, apartment, office)
+SE <- standarized_errors_MR(drywalls, data_drywall_affected)[,1]
+h <- standarized_errors_MR(drywalls, data_drywall_affected)[,2]
+D <- standarized_errors_MR(drywalls, data_drywall_affected)[,3]
+whole <- standarized_errors_MR(drywalls, data_drywall_affected)
+result <- Durbin_Watson_Test(whole)
+print(result)
+```
+the Durbin-Watson table for k = 4, n = 24 is dU = 1.527, dL = 0.805, because 4 - dL > 1.69047 > dU, so we can say problems of autocorrelations doesn't exists.
+
+#17.7
+##Regression diagnostics
+###multicollinearity
+```{r}
+myfile_ <- read_xlsx("Xr17-07.xlsx")
+sales <- myfile_$Sales
+direct <- myfile_$Direct
+newspaper <- myfile_$Newspaper
+television <- myfile_$Television
+data_sales_affected <- cbind(direct, newspaper, television)
+model <- lm(sales ~ data_sales_affected)
+summary(model)
+summary(aov(model))
+cor(data_sales_affected)
+```
+Since the absolute values of the correlations between the independent variables didn't exceed 0.7, so we conclude the problems of multicollinearity doesn't exists.
+
+###Autocorrelation
+To test if problem of autocorrelation exists, we conduct two sided durbin watson test.
+$H_0$ : The data are not first-order correlated
+
+$H_1$ :The data are first-order correlated
+```{r}
+SE <- standarized_errors_MR(sales, data_sales_affected)[,1]
+h <- standarized_errors_MR(sales, data_sales_affected)[,2]
+D <- standarized_errors_MR(sales, data_sales_affected)[,3]
+whole <- standarized_errors_MR(sales, data_sales_affected)
+result <- Durbin_Watson_Test(whole)
+print(result)
+```
+the Durbin-Watson table for k = 3, n = 25 is dU = 1.408, dL = 0.906, because 4 - dL > 1.860515 > dU, so we can say problems of autocorrelations doesn't exists.
+
+#17.13
+##Regression diagnostics
+###multicollinearity
+```{r}
+myfile_ <- read_xlsx("Xr17-13.xlsx")
+lottery <- myfile_$Lottery
+education <- myfile_$Education
+age <- myfile_$Age
+children <- myfile_$Children
+income <- myfile_$Income
+data_lottery_affected <- cbind(education, age, children, income)
+model <- lm(lottery ~ data_lottery_affected)
+summary(model)
+summary(aov(model))
+cor(data_lottery_affected)
+```
+the absolute value of the correlations between the income and education exceeds 0.7, so we conclude the problems of multicollinearity exists.
+
+###Autocorrelation
+To test if problem of autocorrelation exists, we conduct two sided durbin watson test.
+$H_0$ : The data are not first-order correlated
+
+$H_1$ :The data are first-order correlated
+```{r}
+SE <- standarized_errors_MR(lottery, data_lottery_affected)[,1]
+h <- standarized_errors_MR(lottery, data_lottery_affected)[,2]
+D <- standarized_errors_MR(lottery, data_lottery_affected)[,3]
+whole <- standarized_errors_MR(lottery, data_lottery_affected)
+result <- Durbin_Watson_Test(whole)
+print(result)
+```
+the Durbin-Watson table for k = 4, n = 100 is dU = 1.625, dL = 1.461, because dU < 2.0494439 < 4 - dL, so we can say problems of autocorrelations doesn't exists.
+
+#17.57
+##a.
+```{r}
+myfile_ <- read_xlsx("Xr17-57.xlsx")
+tires <- myfile_$Tires
+snowfall <- myfile_$Snowfall
+model <- lm(tires~snowfall)
+plot(snowfall, tires, xlab = "Snowfall", ylab = "Tires sold in a week", main = "Tires sold in a week against snowfall")
+abline(model)
+summary(model)
+summary(aov(model))
+```
+the regression model is y = 11.327 * x + 898.011.
+
+##b.
+##Regression diagnostics
+###multicollinearity
+Since there is only a single independent variable, so we conclude the problems of multicollinearity doesn't exists.
+
+###Autocorrelation
+To test if problem of autocorrelation exists, we conduct two sided durbin watson test.
+$H_0$ : The data are not first-order correlated
+
+$H_1$ :The data are first-order correlated
+```{r}
+standarized_errors <- function(y, x) {
+   n <- length(y)
+   linearModelVar <- lm(y ~ x)
+   a <- coef(linearModelVar)[1]
+   b <- coef(linearModelVar)[2]
+   se <- sigma(linearModelVar)
+   x_mean <- mean(x)
+   x_var <- var(x)
+   h <- vector("double", length = n)
+   y_p <- vector("double", length = n)
+   Error <- vector("double", length = n)
+   Standard_E <- vector("double", length = n)
+   for(i in 1:n) {
+      h[i] <- (1/n) + (x[i] - x_mean)^2 / (x_var * (n - 1))
+      y_p[i] <- a + b * x[i]
+      Error[i] <- y[i] - y_p[i]
+      Standard_E[i] <- Error[i] / (se * sqrt(1 - h[i]))
+      }
+    SEh <-cbind(Standard_E,h)
+}
+SE <- standarized_errors(tires, snowfall)[,1]
+h <- standarized_errors(tires, snowfall)[,2]
+whole <- standarized_errors(tires, snowfall)
+result <- Durbin_Watson_Test(whole)
+print(result)
+```
+the Durbin-Watson table for k = 1, n = 22 is dU = 1.174, dL = 0.997, because 1.024962 < dU, so we can't conclude that whether the standardizes errors is positive first-order correlated or not.
+
+##c.
+We add an independent variable "Number of week" to solve the problem of autocorrelation.
+```{r}
+week <- c(0:21)
+data_tires_affected <- cbind(snowfall, week)
+model <- lm(tires ~ data_tires_affected)
+summary(model)
+summary(aov(model))
+```
+
+###residual analysis
+```{r}
+SE <- standarized_errors_MR(tires, data_tires_affected)[,1]
+h <- standarized_errors_MR(tires, data_tires_affected)[,2]
+D <- standarized_errors_MR(tires, data_tires_affected)[,3]
+print(SE)
+```
+###test if error is normally distributed
+$H_0$ : the error is normally distributed
+
+$H_1$ : the error is not normally distributed
+```{r}
+shapiro.test(SE)
+```
+the p-value is 0.8433, so we conclude the error is normally distributed.
+
+###test if Heteroscedasticity is a problem
+$H_0$ : the errors has homoscedasticity
+
+$H_1$ : the errors has heteroscedasticity
+```{r}
+plot(SE,xlab = "Predicted tires sales", ylab = "Standardlized Error" )
+```
+Do not rejected $H_0$. We can assume that the variation is constant and the mean is around 0.
+
+###test if randomness exists
+$H_0$ : randomness exists
+
+$H_1$ : randomness doesn't exist
+```{r}
+library("snpar")
+runs.test(SE)
+```
+the p-value is 0.6622, so we conclude randomness exists.
+
+###Regression diagnostics
+###multicollinearity
+```{r}
+cor(data_tires_affected)
+```
+Since the absolute values of the correlations between the independent variables didn't exceed 0.7, so we conclude the problems of multicollinearity doesn't exists.
+
+###Autocorrelation
+To test if problem of autocorrelation exists, we conduct two sided durbin watson test.
+$H_0$ : The data are not first-order correlated
+
+$H_1$ :The data are first-order correlated
+```{r}
+whole <- standarized_errors_MR(tires, data_tires_affected)
+result <- Durbin_Watson_Test(whole)
+print(result)
+```
+the Durbin-Watson table for k = 2, n = 22 is dU = 1.284, dL = 0.915, because 4 - dL > 1.835026 > dU, so we can say problems of autocorrelations doesn't exists.
+
+All the required conditions are satisfied.
+
+##d.
+```{r}
+mean(tires)
+```
+the r value is 48.55, which is very small compared to the mean of tire sales, so we say the model fits well.
+
+and the R-squared is 0.704, which means there are 70.4% of weekly sales of tires is explained by this regression line of the two independent variables, and it is close to the adjusted R-squared, which means there are no problems in overfitting.
+
+##e.
+$H_0$ : $\beta_i$ = 0
+
+$H_1$ : $\beta_i$ $\neq$ 0
+
+By the result of the t-test, we reject $H_0$ for $\beta_1$ and $\beta_2$, which means all independent variables are linearly related to sales of tires by 5% significance level.
+
+$\beta_0$ = 953.886 : This is the intercept, the value of y when all the variables take the value zero. Since the data range of all the independent variables do not cover the value zero, do not interpret the intercept.
+
+$\beta_1$ = 13.885 : In this model, for each additional inch of snowfalling, the sales of tires increases on the average by $13.885 (assuming the other variable is held constant).
+
+$\beta_2$ = -7.687 : In this model, for each additional of week passes, the sales of tires decreases on the average by $7.687 (assuming the other variable is held constant).
+
+#18.3
+##a.
+```{r}
+myfile_ <- read_xlsx("Xr18-03.xlsx")
+sales <- myfile_$Sales
+space <- myfile_$Space
+plot(space, sales, main = "sales against space")
+lines(lowess(space, sales))
+```
+We assume the regression model is a squared function, so the regression model is 
+
+y = $\beta_0$ + $\beta_1x$ + $\beta_2x^2$
+
+where y = sales and x = space.
+
+##b.
+
+```{r}
+space_sq <- space * space
+data_sales_affected <- cbind(space, space_sq)
+model <- lm(sales ~ data_sales_affected)
+summary(model)
+summary(aov(model))
+```
+Since the R-squared value is 0.4068, there are 40.68% of the sales are explained by this regression model with two independent variables.
+
+#18.9
+##a.
+the model is 
+
+y = $\beta_0$ + $\beta_1x_1$ + $\beta_2x_2$ + $\beta_3x_1x_2$
+
+```{r}
+myfile_ <- read_xlsx("Xr18-09.xlsx")
+goal <- myfile_$`Goal-diff`
+faceoff <- myfile_$Faceoff
+PM <- myfile_$`PM-diff`
+inter <- faceoff * PM
+data_goal_affected <- cbind(faceoff, PM, inter)
+model <- lm(goal ~ data_goal_affected)
+summary(model)
+summary(aov(model))
+```
+the regression equation is
+
+y = -4.8565893 + $0.1211542x_1$ + $0.1350127_2$ - $0.0009202x_1x_2$
+
+the model doesn't fit well, since the R-squared is 0.1435, only 14.35% of the number of goals are explained by the regression model with three independent variables.
+
+##b.
+the p-value of the ANOVA table is 0.00187, the model is valid.
+
+##c.
+the p-value of t-test of $\beta_3$ is 0.90860, so the interaction term does no effect to the number of goals, so there's no need to include it.

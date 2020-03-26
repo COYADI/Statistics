@@ -1,0 +1,311 @@
+---
+title: "B06705020"
+output: html_notebook
+---
+###14.107
+
+##a.
+Detergents and the temperatures of the water.
+
+##b.
+Whiteness scores.
+
+##c.
+3 water temperatures and 5 degements.
+
+##d.
+
+#check required condition
+check if is normally distributed
+```{r}
+library("readxl")
+myfile_ <- read_xlsx("Xr14-107.xlsx")
+factorA <- c(rep(1, 30), rep(2, 30), rep(3, 30), rep(4, 30), rep(5, 30))
+factorB <- c(rep(c(rep("c", 10), rep("W", 10), rep("H", 10)), 5))
+residents <- data.frame(y = c(myfile_$Detergent1, myfile_$Detergent2, myfile_$Detergent3, myfile_$Detergent4, myfile_$Detergent5), A = factor(factorA), B = factor(factorB))
+result <- aov(y~A + B + A*B, data = residents)
+shapiro.test(result$residuals)
+
+```
+the p-valueuted is 0.7023, so we can conclude that it is normally distributed.
+
+check if variances are equal
+
+$H_0$ : All variances are equal.
+
+$H_1$ : At least two variances differ.
+```{r}
+bartlett.test(y~A, data = residents)
+bartlett.test(y~B, data = residents)
+```
+thr p-value is 0.009668 and 0.6602, so we reject the null hypothesis in favor of the alternative hypothesis, which means there are at least two variances differ.
+
+#Main Question
+Hypothesis 1
+
+$H_0$ : The means of the five levels of factor A are equal.
+
+$H_1$ : At least two means differ.
+
+Hypothesis 2
+
+$H_0$ : The means of the three levels of factor B are equal.
+
+$H_1$ : At least two means differ.
+
+Hypothesis 3
+
+$H_0$ : The factor A and B do not interact to affect the mean whiteness score.
+
+$H_1$ : The factor A and B do interact to affect the mean whiteness score.
+```{r}
+summary(result)
+```
+(Hypothesis 1) the p-value is 5.83e-05, so we reject the null hypothesis in favor of the alternative hypothesis, which means at least two means of factor A differ.
+
+(Hypothesis 2) the p-value is 1.35e-07, so we reject the null hypothesis in favor of the alternative hypothesis, which means at least two means of factor B differ.
+
+(Hypothesis 3)the p-value is 0.00714, so we reject the null hypothesis in favor of the alternative hypothesis, which means the factor A and B do interact to affect the mean whiteness score.
+
+###14.109
+
+##a.
+Two, Time and class configuration
+
+##b.
+The number of time students ask and answer questions.
+
+##c.
+2 levels of the class configuration and 3 levels of time of class.
+
+##d.
+
+#Requirement test
+check if is normally distributed.
+```{r}
+myfile_ <- read_xlsx("Xr14-109.xlsx")
+factorA <- c(rep(c(rep("R", 5), rep("U", 5)), 3))
+factorB <- c(rep("9am", 10), rep("1pm", 10), rep("4pm", 10))
+residents <- data.frame(y = c(myfile_$`9:00am`, myfile_$`1:00pm`, myfile_$`4:00pm`), A = factor(factorA), B = factor(factorB))
+result <- aov(y~A + B + A*B, data = residents)
+shapiro.test(result$residuals)
+```
+the p-value is 0.01243, so we can conclude that it isn't normally distributed.
+
+check if variances are equal
+
+$H_0$ : All variances are equal.
+
+$H_1$ : At least two variances differ.
+```{r}
+bartlett.test(y~A, data = residents)
+bartlett.test(y~B, data = residents)
+```
+the p-value is 0.4562 and 0.8583, so we don't reject the null hypothesis.
+
+#Main Question
+Hypothesis 1
+
+$H_0$ : The means of the two levels of factor A are equal.
+
+$H_1$ : At least two means differ.
+
+Hypothesis 2
+
+$H_0$ : The means of the three levels of factor B are equal.
+
+$H_1$ : At least two means differ.
+
+Hypothesis 3
+
+$H_0$ : The factor A and B do not interact to affect the mean number of time students ask and answer in class.
+
+$H_1$ : The factor A and B do interact to affect the mean number of time students ask and answer in class.
+```{r}
+summary(result)
+```
+(Hypothesis 1) the p-value is 0.220269, so we don't reject the null hypothesis, which means there are not enough evidence to say there are difference in class configurations.
+
+(Hypothesis 2) the p-value is 0.082567, so we don't reject the null hypothesis, which means there are not enough evidence to say there are difference in time of class.
+
+(Hypothesis 3)the p-value is 0.000213, so we reject the null hypothesis in favor of the alternative hypothesis, which means the factor A and B do interact to affect the mean number of time student ask and answer in class.
+
+###A14.5
+
+##a.
+
+#Requirement check
+check if the data are normally distributed.
+```{r}
+myfile_ <- read_xls("XrA14-05.xls")
+msa <- myfile_$`Expenses MSA`[!is.na(myfile_$`Expenses MSA`)]
+reg <- myfile_$`Expenses Regular`[!is.na(myfile_$`Expenses Regular`)]
+shapiro.test(msa)
+shapiro.test(reg)
+```
+the p-value for MSA expenses is 0.919, so we can conclude it's normally distributed.
+
+the p-value for Regular expenses is 0.02043, so we can't conclude it's normally distributed.
+
+#Main Question
+$H_0$ : the two variances are equal.
+
+$H_1$ : the two variances are not equal.
+```{r}
+var.test(msa, reg, alternative = "two.sided")
+```
+the p-value is 0.9926, so we don't reject the null hypothesis, which means the two variances are equal.
+
+$H_0$ : $\mu_M$ = $\mu_R$
+
+$H_1$ : $\mu_M$ < $\mu_R$
+
+where $\mu_M$ is the average expense of MSA program and $\mu_R$ is the average expense of regular program.
+```{r}
+t.test(msa, reg, alternative = "less", var.equal = T)
+```
+the p-value is 4.574e-09, so we reject the null hypothesis in favor of the alternative hypothesis, which means the average expense of MSA program is less than the average expense of regular program.
+
+##b.
+$H_0$ : $p_M$ = $p_R$
+
+$H_1$ : $p_M$ < $p_R$
+
+where $p_M$ is the probability of a person who chose the MSA program and is in excellent health and $p_R$ is the probability of a person who chose the regular program and is in excellent health
+```{r}
+msa_h <- myfile_$`Health MSA`[!is.na(myfile_$`Health MSA`)]
+reg_h <- myfile_$`Health Regular`[!is.na(myfile_$`Health Regular`)]
+table(msa_h)
+table(reg_h)
+msa_h <- c(48, 15+48)
+reg_h <- c(110, 110+31)
+prop.test(msa_h, reg_h, alternative = "less", correct = F)
+```
+the p-value is 0.4343, so we don't reject the null hypothesis, which means the probability in excellent health doesn't differ in two programs.
+
+###A14.17
+
+##a.
+[instructor, assistant professor, associate professor, full professor] * [business professor, engineering professor, arts professor, science professor] = 16 factors.
+
+##b.
+
+#Requirement Check
+test if is normally distributed
+```{r}
+myfile_ <- read_xls("XrA14-17.xls")
+nobs <- nrow(myfile_)
+a <- c(rep("1", 5), rep("2", 5), rep("3", 5), rep("4", 5), rep("5", 5), rep("6", 5), rep("7", 5), rep("8", 5), rep("9", 5), rep("10", 5), rep("11", 5), rep("12", 5), rep("13", 5), rep("14", 5), rep("15", 5), rep("16", 5))
+data <- data.frame(y = c(myfile_$Business, myfile_$Engineering, myfile_$Arts, myfile_$Science), a = factor(a))
+result <- aov(y~a, data = data)
+shapiro.test(result$residuals)
+```
+the p-value is 0.4564, so we can conclude that it is normally distributed.
+
+check if the variances are equal
+
+$H_0$ : All variances are equal.
+
+$H_1$ : At least two variances differ.
+```{r}
+bartlett.test(y~a, data = data)
+```
+the p-value is 0.7968, so we don't reject the null hypothesis, which means that there are no difference in variances.
+
+#Main Question
+$H_0$ : All means are equal.
+
+$H_1$ : At least two mean differ.
+```{r}
+summary(result)
+```
+the p-value is 0.0019, so we reject the null hypothesis in favor of the alternative hypothesis, which means at least two kinds of professors differ in time to work.
+
+##c.
+the subject of the professors with 4 levels and the type of professors with 4 levels.
+
+##d.
+$H_0$ : The factor A and B do not interact to affect the mean time a professor works.
+
+$H_1$ : The factor A and B do interact to affect the mean time a professor works.
+```{r}
+A <- c(rep(c(rep("L", 5), rep("a", 5), rep("A", 5), rep("F", 5)), 4))
+B <- c(rep("B", 20), rep("E", 20), rep("A", 20), rep("S", 20))
+residents <- data.frame(y = c(myfile_$Business, myfile_$Engineering, myfile_$Arts, myfile_$Science), A = factor(A), B = factor(B))
+summary(aov(y~A + B + A*B, data = residents))
+```
+the p-value is 0.00438, so we reject the null hypothesis in favor of the alternative hypothesis, ehich means factor A and B do interact and affect the mean time a professor works.
+
+##e.
+$H_0$ : The means of the four levels of factor A are equal.
+
+$H_1$ : At least two means differ.
+
+the p-value is 0.61094, so we don't reject the null hypothesis, which means the rank of a professor doesn't affect the time he works.
+
+##f.
+$H_0$ : The means of the four levels of factor B are equal.
+
+$H_1$ : At least two means differ.
+
+the p-value is 0.00639, so we reject the null hypothesis in favor of the alternative hypothesis, which means the faculty of a professor do affect the time he works.
+
+###15.11
+$H_0$ : $p_A$ = $p_B$ = $p_C$ = $p_D$ = $p_E$ = 0.2
+
+$H_1$ : At least one $p_i$ $\neq$ $a_i$
+
+where A B C D E are the choice of the correct answer.
+```{r}
+myfile_ <- read_xlsx("Xr15-11.xlsx")
+actual <- table(myfile_$`Correct choice`)
+prob <- c(rep(0.2, 5))
+enobs <- prob * length(myfile_$`Correct choice`)
+if(sum(enobs < 5) > 0){
+  cat("rule of five not meet.")
+}else{
+  chisq.test(actual, p = prob)
+}
+```
+the p-value is 0.1712 so we don't reject the null hypothesis, which means the professor randomly distributed the correct answer over the five choice.
+
+###15.16
+$H_0$ : $p_1$ = $p_2$ = $p_3$ = $p_4$ = $p_5$ = 0.2
+
+$H_1$ : At least one $p_i$ $\neq$ $a_i$
+
+where 1 2 3 4 5 are the pitching conditions
+```{r}
+myfile_ <- read_xlsx("Xr15-16.xlsx")
+actual <- table(myfile_$Pitches)
+prob <- c(0.4, 0.144, 0.178, 0.095, 0.183)
+enobs <- prob * length(myfile_$Pitches)
+if(sum(enobs < 5) > 0){
+  cat("rule of five not meet.")
+}else{
+  chisq.test(actual, p = prob)
+}
+```
+the p-value is 0.02933, so we reject the null hypothesis in favor of the alternative hypothesis, which means there are differences between the rookie and the rest pitchers
+
+###15.33
+$H_0$ : the political affiliation doesn't affect the support for the economic options.
+
+$H_1$ : the political affiliation affects the support for the economic options.
+```{r}
+data <- matrix(c(101, 282, 61, 38, 67, 25, 131, 88, 31, 61, 90, 25), nrow = 4, ncol = 3)
+print(data)
+chisq.test(data, correct = F)
+```
+the p-value is extremely small (2.2e-16), so we reject the null hypothesis in favor of the alternative hypothesis, which means the political affiliation truly affects the support for the economic options.
+
+###15.41
+$H_0$ : the research findings for calcium-channel blockers are not affected by whether the research is funded by drug companies.
+
+$H_1$ : the research findings for calcium-channel blockers are affected by whether the research is funded by drug companies.
+```{r}
+myfile_ <- read_xlsx("Xr15-41.xlsx")
+data <- table(myfile_)
+chisq.test(data, correct = F)
+```
+the p-value is 2.77e-05, so we reject the null hypothesis in favor of the alternative hypothesis, which means the research findings for calcium-channel blockers are affected by whether the research is funded by drug companies.

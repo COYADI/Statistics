@@ -1,0 +1,79 @@
+---
+title: "B06705020"
+output: html_notebook
+---
+#13.17
+a.
+$H_0$ : Tastee baby food isn't superior in gaining weight.
+$H_1$ : Tastee baby food is superior in gaining weight.
+```{r}
+library("readxl")
+myfile_ <- read_xlsx("Xr13-17.xlsx")
+tastee <- myfile_$Tastee[!is.na(myfile_$Tastee)]
+competitor <- myfile_$Competitor
+var.test(x = tastee, y = competitor, alternative = "two.sided", conf.level = 0.95)
+cat("According to the F test, the variances of samples are equal.")
+t.test(x = tastee, y = competitor,var.equal = TRUE, alternative = "greater", conf.level = 0.95)
+cat("we reject the null hypothesis and accept the alternative hypothesis, which means the Tastee is indeed superior in making babies gain weight.")
+```
+
+b.
+```{r}
+t.test(x = tastee, y = competitor, var.equal = TRUE, alternative = "two.sided", conf.level = 0.95)
+cat("We have 95% confidence that [3.125913, 8.020754] covers the real difference of the mean weight-gain between Tastee and its competitor.")
+```
+c.
+```{r}
+hist(tastee, xlab = "Gained weight", breaks = 5)
+hist(competitor, xlab = "Gained weight", breaks = 5)
+```
+
+#13.33
+$H_0$ : The new steeled-belt radial tire doesn't lasts longer.
+$H_1$ : The new steeled-belt radial tire lasts longer.
+```{r}
+myfile_ <- read_xlsx("Xr13-33.xlsx")
+new <- myfile_$New
+existing <- myfile_$Existing
+var.test(x = new, y = existing, alternative = "two.sided", conf.level = 0.95)
+cat("According to the F test, the variances of samples are equal.")
+t.test(x = new, y = existing, alternative = "greater", var.equal = TRUE, conf.level = 0.95)
+cat("we accept the null hypothesis, which means the new tire doesn't lasts longer.")
+```
+
+#13.37
+$H_0$ : SAT score didn't increase.
+$H_1$ : SAT score increases.
+```{r}
+myfile_ <- read_xlsx("Xr13-37.xlsx")
+before <- myfile_$Before
+after <- myfile_$After
+var.test(x = after, y = before, alternative = "two.sided", conf.level = 0.95)
+cat("According to the F test, the variances of samples are equal.")
+t.test(x = after, y = before, alternative = "greater", var.equal = TRUE, conf.level = 0.95)
+cat("we reject the null hypothesis and accept the alternative hypothesis, which means the SAT score increases after the change in the school's start time.")
+```
+
+#13.116
+$H_0$ : The marks of the two classes have no differences.
+$H_1$ : The marks if the two classes have differences.
+```{r}
+myfile_ <- read_xlsx("Xr13-116.xlsx")
+class1 <- myfile_$`Class 1`
+class2 <- myfile_$`Class 2`
+var.test(x = class1, y = class2, alternative = "two.sided", conf.level = 0.95)
+cat("we accept the null hypothesis, which means the marks of the two classes has no differences in variation.")
+```
+
+#13.117
+$H_0$ : The speed of two weeks didn't vary.
+$H_1$ : The speed of two weeks varied.
+```{r}
+myfile_ <- read_xlsx("Xr13-117.xlsx")
+week1 <- myfile_$`Week 1`
+week2 <- myfile_$`Week 2`
+var.test(x = week1, y = week2, alternative = "greater", conf.level = 0.95)
+cat("we reject the null hypothesis, and accept the alternative hypothesis, which means the variation of the speed of two weeks differs.")
+```
+
+

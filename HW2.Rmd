@@ -1,0 +1,143 @@
+---
+title: "B06705020.html"
+output: html_notebook
+---
+
+##13.89
+Let $\mu_1$ be the mean time to stop with ABS, and $\mu_2$ be the mean time to stop without ABS.
+
+$\mu_D$ as $\mu_1$ - $\mu_2$.  
+
+$H_0$ : $\mu_D$ = 0.  
+
+$H_1$ : $\mu_D$ < 0.
+```{r}
+library("readxl")
+myfile_ <- read_xlsx("Xr13-89.xlsx")
+ABS <- myfile_$ABS
+nonABS <- myfile_$`non-ABS`
+t.test(x = ABS, y = nonABS, paired = TRUE, alternative = "less", conf.level = 0.95)
+cat("the p-value is 0.03196, so we reject the null hypothesis in favor of the alternative hypothesis.")
+```
+
+##13.92
+#a.  
+let $\mu_1$ be the mean medical expenses before the program and $\mu_2$ be the mean medical expenses after the program. $\mu_D$ as $\mu_1$ - $\mu_2$.  
+
+$H_0$ : $\mu_D$ = 0.  
+
+$H_1$ : $\mu_D$ > 0.
+```{r}
+myfile_ <- read_xlsx("Xr13-92.xlsx")
+before <- myfile_$Before
+after <- myfile_$After
+t.test(x = before, y = after, paired = TRUE, alternative = "greater", conf.level = 0.95)
+cat("the p-value is 0.04842, so we reject the null hypothesis in favor of the alternative hypothesis")
+```
+#b.  
+we can re-run t.test with a two side alternative to find out
+```{r}
+t.test(x = before, y = after, paired = TRUE, alternative = "two.sided", conf.level = 0.95)
+cat("so the average expenses which the program saved is 95% covered by the interval[-0.6555777, 6.8222444]")
+```
+
+#c.  
+
+It's appropriate to conduct the matched pairs experiment because the sample is the same and we are going to find out the change of the experiment. Besides we need to prove that the $\mu_1$ - $\mu_2$ is normally distributed.
+```{r}
+result <- before - after
+shapiro.test(result)
+cat("the result says that it's normally distributed.")
+```
+
+
+##13.96
+#a.  
+
+let $\mu_1$ be the mean heating cost in the house which is not an insulating house, and $\mu_2$ be the mean heating cost in the house which the house is an insulating house. $\mu_D$ as $\mu_1$ - $\mu_2$. 
+
+$H_0$ : $\mu_D$ = 0.  
+
+$H_1$ : $\mu_D$ > 0.
+```{r}
+myfile_ <- read_xlsx("Xr13-96.xlsx")
+insulated <- myfile_$Insulated
+uninsulated <- myfile_$Uninsulated
+t.test(x = insulated, y = uninsulated, paired = TRUE, alternative = "less", conf.level = 0.9)
+cat("the p-value is extremely small(5.131e-11), ao we reject the null hypothesis in favor of the alternative hypothesis.")
+```
+#b.  
+
+we can re-run the t.test with a two side alternative to find out
+```{r}
+t.test(x = uninsulated, y = insulated, paired = TRUE, alternative = "two.sided", conf.level = 0.95)
+cat("so the average heating cost saved by insulating house is 95% covered by the interval [50.12276, 64.67724]")
+```
+
+#c.  
+
+the required condition for paired t-test is the differences must be normally distributed.
+
+##13.130
+let $p_1$ be the probability that a customer who paid regular price purchased a warranty, and $p_2$ be the probability that a customer who paid sale price purchased a warranty.  
+
+$H_0$ : $p_1$ - $p_2$ = 0  
+
+$H_1$ : $p_1$ - $p_2$ > 0
+```{r}
+warranty <- c(47, 25)
+total <- c(229, 178)
+prop.test(warranty, total, alternative = "greater", conf.level = 0.9, correct = FALSE)
+cat("the p-value is 0.04464, so we reject the null hypothesis in favor of the alternative hypothesis.")
+```
+
+##13.156
+let $p_1$ be the probability of a resume which includes a reference to religious activities get code 1, and $p_2$ be the probability of a resume which didn't include a reference to religious activities get code 1.  
+
+$H_0$ : $p_1$ - $p_2$ = 0  
+
+$H_1$ : $p_1$ - $p_2$ < 0
+```{r}
+myfile_ <- read_xlsx("Xr13-156.xlsx")
+table(myfile_$`No religion`)
+table(myfile_$Religion)
+code1 <- c(272, 240)
+total <- c(3200, 3200)
+prop.test(code1, total, alternative = "greater", conf.level = 0.95, correct = FALSE)
+cat("the p-value is 0.07018, so we can't reject the null hypothesis.")
+```
+
+##A13.13
+#a.  
+
+let $p_1$ be the probability of a man chooses the larger reward after shown a picture of an attractive woman, and $p_2$ be the probability of a man chooses the larger reward after shown a picture of a less-attractive woman.  
+
+$H_0$ : $p_1$ - $p_2$ = 0  
+
+$H_1$ : $p_1$ - $p_2$ != 0
+```{r}
+myfile_ <- read_xls("XrA13-13.xls")
+table(myfile_$`Male most`)
+table(myfile_$`Male less`)
+larger <- c(31, 42)
+total <- c(52, 52)
+prop.test(larger, total, alternative = "two.sided", conf.level = 0.95, correct = FALSE)
+cat("the p-value is 0.01837, so we reject the null hypothesis in favor of the alternative hypothesis.")
+```
+
+#b.  
+
+let $p_1$ be the probability of a woman chooses the larger reward after shown a picture of an attractive man, and $p_2$ be the probability of a woman chooses the larger reward after shown a picture of a less-attractive man.  
+
+$H_0$ : $p_1$ - $p_2$ = 0  
+
+$H_1$ : $p_1$ - $p_2$ != 0
+```{r}
+table(myfile_$`Female most`)
+table(myfile_$`Female less`)
+larger <- c(41, 43)
+total <- c(52, 52)
+prop.test(larger, total, alternative = "two.sided", conf.level = 0.95, correct = FALSE)
+cat("the p-value is 0.6188, so we can't reject the null hypothesis.")
+```
+

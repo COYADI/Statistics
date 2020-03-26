@@ -1,0 +1,366 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+#17.3
+##a.
+```{r}
+library("readxl")
+myfile_ <- read_xlsx("Xr17-03.xlsx")
+drywalls <- myfile_$Drywall
+permits <- myfile_$Permits
+mortgage <- myfile_$Mortgage
+apartment <- myfile_$`A Vacancy`
+office <- myfile_$`O Vacancy`
+data_drywall_affected <- cbind(permits, mortgage, apartment, office)
+model <- lm(drywalls ~ data_drywall_affected)
+summary(model)
+plot(permits, drywalls, xlab = "Number of building permits issued in the county", ylab = "Monthly sales of drywalls", main = "Monthly sales of drywalls against number of building permits issued in the county ")
+abline(lm(drywalls ~ permits))
+plot(mortgage, drywalls, xlab = "Five years mortgage rates(in percentage points)", ylab = "Monthly sales of drywalls", main = "Monthly sales of drywalls against five years mortgage rates(in percentage points)")
+abline(lm(drywalls ~ mortgage))
+plot(apartment, drywalls, xlab = "Vacancy rate in apartments(in percentage points)", ylab = "Monthly sales of drywalls", main = "Monthly sales of drywalls against vacancy rate in apartments(in percentage points)")
+abline(lm(drywalls ~ apartment))
+plot(office, drywalls, xlab = "Vacancy rate in office buildings(in percentage points)", ylab = "Monthly sales of drywalls", main = "Monthly sales of drywalls against vacancy rate in office buildings(in percentage points)")
+abline(lm(drywalls ~ office))
+summary(aov(model))
+```
+The regression equation is:
+
+Monthly sales of drywalls = -111.828 + 4.763  Number of building permits issued in the county + 16.988  Five years mortgage rates(in percentage points) - 10.528 Vacancy rate in apartments(in percentage points) + 1.308 Vacancy rate in office buildings(in percentage points)
+
+##b.
+```{r}
+mean(drywalls)
+```
+the standard error is 40.13, which is compared small to 230.9583, so we can conclude the model fits well.
+
+##c.
+the R-squared is 0.8935, which means about 89.35% of the monthly sales of drywalls is explained by this regression line of the four independent variables, while 10.55% remained unexplained.
+
+The adjusted coefficient of determination is 87.11% is close to 89.35% though 4 independent variables are included in the model, indicating that the model has not problem of over-fitting
+
+##d.
+$H_0$ : $\beta_1$ = $\beta_2$ = $\beta_3$ = $\beta_4$ = 0
+
+$H_1$ : at least one of all parameters are not equal to 0
+
+By the result of ANOVA, the p-value us 5.45e-09, so we conclude that at least one of the $\beta_i$ is not equal to zero. Thus, at least one independent variable is related to y. This regression model is valid.
+
+##e.
+Monthly sales of drywalls = -111.828 + 4.763  Number of building permits issued in the county + 16.988  Five years mortgage rates(in percentage points) - 10.528 Vacancy rate in apartments(in percentage points) + 1.308 Vacancy rate in office buildings(in percentage points)
+
+$\beta_0$ = -111.828 : This is the intercept, the value of y when all the variables take the value zero. Since the data range of all the independent variables do not cover the value zero, do not interpret the intercept.
+
+$\beta_1$ = 4.763 : In this model, for each additional number of building permits issued in the county, the sales increases on the average by $4.763 (assuming the other variable is held constant).
+
+$\beta_2$ = 16.988 : In this model, for each additional five-year mortgage rates, the sales increases on the average by $16.988 (assuming the other variable is held constant).
+
+$\beta_3$ = -10.528 : In this model, for each additional vacancy rate in apartments, the sales decreases on the average by $10.528 (assuming the other variable is held constant).
+
+$\beta_4$ = 1.308 : In this model, for each additional vacancy rate in office buildings , the sales increases on the average by $1.308 (assuming the other variable is held constant).
+
+##f.
+$H_0$ : $\beta_i$ = 0
+
+$H_1$ : $\beta_i$ $\neq$ 0
+
+By the result of the t-test, we reject $H_0$ for $\beta_1$ but don't reject for the rest variables, which means only the number of building permits issued in the county is linearly related to sales by 5% significance level.
+
+##g.
+```{r}
+data = data.frame(data_drywall_affected <- cbind(50, 9, 3.6, 14.3))
+PI <- predict(model, data, interval = "predict")
+print(PI)
+```
+we have 95% confidence that [167.1212, 352.9296] covers the sales of drywalls in this specific situation.
+
+##residual analysis
+```{r}
+standarized_errors_MR <- function(y, x) {
+   n <- length(y)
+   k <- ncol(x)
+   x1 <- vector("double", length = n)
+   for(j in 1:n) {
+      x1[j] <- 1
+      }
+   Matrix_X <- cbind(x1, x)
+   Matrix_Y <- cbind(y)
+   Matrix_H <- Matrix_X%*%solve(t(Matrix_X)%*%Matrix_X)%*%t(Matrix_X)
+   Matrix_YP <- Matrix_H%*%Matrix_Y
+   y_p <- Matrix_YP[,1]
+   h <- vector("double", length = n)
+   D <- vector("double", length = n)
+   Error <- vector("double", length = n)
+   Standard_E <- vector("double", length = n)
+   se <- sqrt(sum((y - y_p)^2)/(n - k - 1))
+   for(i in 1:n) {
+      h[i] <- Matrix_H[i,i]
+      Error[i] <- y[i] - y_p[i]
+      Standard_E[i] <- Error[i] / (se * sqrt(1 - h[i]))
+      D[i] <- (y[i] - y_p[i])^2 * h[i] / ((k - 1) * se^2 * (1 - h[i])^2)
+      }
+    SEhD <- cbind(Standard_E,h,D)
+   return(SEhD)
+}
+myfile_ <- read_xlsx("Xr17-03.xlsx")
+drywalls <- myfile_$Drywall
+permits <- myfile_$Permits
+mortgage <- myfile_$Mortgage
+apartment <- myfile_$`A Vacancy`
+office <- myfile_$`O Vacancy`
+data_drywall_affected <- cbind(permits, mortgage, apartment, office)
+SE <- standarized_errors_MR(drywalls, data_drywall_affected)[,1]
+h <- standarized_errors_MR(drywalls, data_drywall_affected)[,2]
+D <- standarized_errors_MR(drywalls, data_drywall_affected)[,3]
+print(SE)
+```
+###test if error is normally distributed
+$H_0$ : the error is normally distributed
+
+$H_1$ : the error is not normally distributed
+```{r}
+shapiro.test(SE)
+```
+the p-value is 0.6351, so we conclude the error is normally distributed.
+
+###test if Heteroscedasticity is a problem
+$H_0$ : the errors has homoscedasticity
+
+$H_1$ : the errors has heteroscedasticity
+```{r}
+plot(SE,xlab = "Predicted Sales", ylab = "Standardlized Error" )
+```
+Do not rejected $H_0$. We can assume that the variation is constant and the mean is around 0.
+
+###test if randomness exists
+$H_0$ : randomness exists
+
+$H_1$ : randomness doesn't exist
+```{r}
+library("snpar")
+runs.test(SE, exact = F)
+```
+the p-value is 0.6764, so we conclude randomness exists.
+
+##Outliers and influential observations
+```{r}
+outliers <- abs(SE) > 2
+print(outliers)
+io <- D > 1
+print(io)
+```
+Samples 1 and 4 are outliers.
+
+There¡¦s no influential observation in this sample.
+
+#17.7
+##a.
+```{r}
+myfile_ <- read_xlsx("Xr17-07.xlsx")
+sales <- myfile_$Sales
+direct <- myfile_$Direct
+newspaper <- myfile_$Newspaper
+television <- myfile_$Television
+data_sales_affected <- cbind(direct, newspaper, television)
+model <- lm(sales ~ data_sales_affected)
+summary(model)
+summary(aov(model))
+plot(direct, sales, xlab = "Weekly expenditure on direct mailing", ylab = "Weekly gross sales", main = "Weekly gross sales against Weekly expenditure on direct mailing")
+abline(lm(sales ~ direct))
+plot(newspaper, sales, xlab = "Weekly expenditure on newspaper advertising", ylab = "Weekly gross sales", main = "Weekly gross sales against Weekly expenditure on newspaper advertising")
+abline(lm(sales ~ newspaper))
+plot(television, sales, xlab = "Weekly expenditure on television commercials", ylab = "Weekly gross sales", main = "Weekly gross sales against Weekly expenditure on television commercials")
+abline(lm(sales ~ television))
+```
+The regression equation is:
+
+Weekly gross sales = 12.3084 + 0.5699 Weekly expenditure on direct mailing + 3.32 Weekly expenditure on newspaper advertising + 0.7322 Weekly expenditure on television commercials
+
+##b.
+the R-squared is 0.1953, which means about 19.53% of the weekly gross sales is explained by this regression line of the three independent variables, while the rest remained unexplained.
+
+The adjusted coefficient of determination is 8.029% is not close to 19.53% though 3 independent variables are included in the model, indicating that the model has problem of over-fitting
+
+##c.
+```{r}
+mean(sales)
+```
+the standard error is 2.587, which is compared small to 19.8216, so we can conclude the model fits well.
+
+##d.
+$H_0$ : $\beta_1$ = $\beta_2$ = $\beta_3$ = 0
+
+$H_1$ : at least one of all parameters are not equal to 0
+
+By the result of ANOVA, the p-value us 0.198, so we conclude that neither a independent variable is related to weekly gross sales. This regression model is not valid.
+
+##e.
+$H_0$ : $\beta_i$ = 0
+
+$H_1$ : $\beta_i$ $\neq$ 0
+
+By the result of the t-test, we reject $H_0$ for $\beta_2$ but don't reject for the rest variables, which means only the weekly expenditure on newspaper advertising is linearly related to weekly gross sales by 5% significance level.
+
+##f.
+```{r}
+data = data.frame(data_sales_affected <- cbind(800, 1200, 2000))
+PI <- predict(model, data, interval = "predict")
+print(PI)
+```
+we have 95% confidence that the interval [-3491.122 , 15324.29] covers the weekly gross sales in this specific situation.
+
+##g.
+```{r}
+CI <- predict(model, data, interval = "confidence")
+print(CI)
+```
+we have 95% confidence that the interval [-3491.121 , 15324.29] covers the mean weekly gross sales in this specific situation.
+
+##h.
+The interval in f. covers the real value of sales in that specific situation at 95% of chance, while the one in g. covers the mean value of sales in that specific situation at 95% of chance.
+
+##residual analysis
+```{r}
+myfile_ <- read_xlsx("Xr17-07.xlsx")
+sales <- myfile_$Sales
+direct <- myfile_$Direct
+newspaper <- myfile_$Newspaper
+television <- myfile_$Television
+data_sales_affected <- cbind(direct, newspaper, television)
+SE <- standarized_errors_MR(sales, data_sales_affected)[,1]
+h <- standarized_errors_MR(sales, data_sales_affected)[,2]
+D <- standarized_errors_MR(sales, data_sales_affected)[,3]
+print(SE)
+```
+
+###test if error is normally distributed
+$H_0$ : the error is normally distributed
+
+$H_1$ : the error is not normally distributed
+```{r}
+shapiro.test(SE)
+```
+the p-value is 0.1614, so we conclude the error is normally distributed.
+
+###test if Heteroscedasticity is a problem
+$H_0$ : the errors has homoscedasticity
+
+$H_1$ : the errors has heteroscedasticity
+```{r}
+plot(SE,xlab = "Predicted Sales", ylab = "Standardlized Error" )
+```
+Do not rejected $H_0$. We can assume that the variation is constant and the mean is around 0.
+
+###test if randomness exists
+$H_0$ : randomness exists
+
+$H_1$ : randomness doesn't exist
+```{r}
+runs.test(SE, exact = F)
+```
+the p-value is 0.8443, so we conclude randomness exists.
+
+##Outliers and influential observations
+```{r}
+outliers <- abs(SE) > 2
+print(outliers)
+io <- D > 1
+print(io)
+```
+Samples 3 is a outlier.
+
+There¡¦s no influential observation in this sample.
+
+#17.13
+##a.
+```{r}
+myfile_ <- read_xlsx("Xr17-13.xlsx")
+lottery <- myfile_$Lottery
+education <- myfile_$Education
+age <- myfile_$Age
+children <- myfile_$Children
+income <- myfile_$Income
+data_lottery_affected <- cbind(education, age, children, income)
+model <- lm(lottery ~ data_lottery_affected)
+summary(model)
+summary(aov(model))
+plot(education, lottery, xlab = "Number of years of education", ylab = "Amount spent on lottery tickets as a percentage of total household income", main = "Amount spent on lottery tickets as a percentage of total household income against Number of years of education")
+abline(lm(lottery ~ education))
+plot(age, lottery, xlab = "Age", ylab = "Amount spent on lottery tickets as a percentage of total household income", main = "Amount spent on lottery tickets as a percentage of total household income against Age")
+abline(lm(lottery ~ age))
+plot(children, lottery, xlab = "Number of children", ylab = "Amount spent on lottery tickets as a percentage of total household income", main = "Amount spent on lottery tickets as a percentage of total household income against Number of children")
+abline(lm(lottery ~ children))
+plot(income, lottery, xlab = "Personal income(in thousands of dollars)", ylab = "Amount spent on lottery tickets as a percentage of total household income", main = "Amount spent on lottery tickets as a percentage of total household income against Personal income(in thousands of dollars)")
+abline(lm(lottery ~ income))
+```
+the regression equation :
+Amount spent on lottery tickets as a percentage of total household income = 11.90609 - 0.43002 Number of years of education + 0.02919 Age + 0.09344 Number of children - 0.07447 Personal income(in thousands of dollars)
+
+##b.
+$H_0$ : $\beta_1$ = $\beta_2$ = $\beta_3$ = $\beta_4$ = 0
+
+$H_1$ : at least one of all parameters are not equal to 0
+
+According to the ANOVA table, the p-value is 4.09e-11, we can conclude that at least one of the four independent variables is related to the amount spent on lottery tickets as a percentage of total household income, so the model is valid.
+
+##c.
+$H_0$ : $\beta_i$ = 0
+
+$H_1$ : $\beta_i$ $\neq$ 0
+
+By the result of the t-test, we reject $H_0$ for $\beta_1$ and $\beta_4$ but don't reject for the rest variables, which means only the number of years of education and personal income(in thousands of dollars) are linearly related to the amount spent on lottery tickets as a percentage of total household income by 5% significance level.
+
+##residual analysis
+```{r}
+myfile_ <- read_xlsx("Xr17-13.xlsx")
+lottery <- myfile_$Lottery
+education <- myfile_$Education
+age <- myfile_$Age
+children <- myfile_$Children
+income <- myfile_$Income
+data_lottery_affected <- cbind(education, age, children, income)
+SE <- standarized_errors_MR(lottery, data_lottery_affected)[,1]
+h <- standarized_errors_MR(lottery, data_lottery_affected)[,2]
+D <- standarized_errors_MR(lottery, data_lottery_affected)[,3]
+print(SE)
+```
+
+###test if error is normally distributed
+$H_0$ : the error is normally distributed
+
+$H_1$ : the error is not normally distributed
+```{r}
+shapiro.test(SE)
+```
+the p-value is 0.004009, so we conclude the error is not normally distributed.
+
+###test if Heteroscedasticity is a problem
+$H_0$ : the errors has homoscedasticity
+
+$H_1$ : the errors has heteroscedasticity
+```{r}
+plot(SE,xlab = "Predicted Amount spent on lottery", ylab = "Standardlized Error" )
+```
+Do not rejected $H_0$. We can assume that the variation is constant and the mean is around 0.
+
+###test if randomness exists
+$H_0$ : randomness exists
+
+$H_1$ : randomness doesn't exist
+```{r}
+runs.test(SE,exact = F)
+```
+the p-value is 1, so we conclude randomness exists.
+
+##Outliers and influential observations
+```{r}
+outliers <- abs(SE) > 2
+print(outliers)
+io <- D > 1
+print(io)
+```
+Samples 3, 52, 63, 66, 87 and 94 are outliers.
+
+There¡¦s no influential observation in this sample.
+

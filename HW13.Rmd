@@ -1,0 +1,201 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+Moving_Average <- function(x, n) {
+   k <- length(x)
+   y <- vector("double", length = k + 1)
+   lb = n + 1
+   ub = k + 1
+   for(i in lb:ub) {
+       sum_x = 0
+      lb_mv = i - n
+      ub_mv = i - 1
+      for(j in lb_mv:ub_mv){
+         sum_x <- sum_x + x[j]
+         }
+      y[i] <- sum_x / n
+   }
+   return(y)
+}
+Exponential_Smoothing <- function(x, a) {
+   k <- length(x)
+   y <- vector("double", length = k + 1)
+   y[1] = x[1]
+   ub_es = k+1
+   for(i in 2:ub_es) {
+      j <- i - 1
+      y[i] <- a * x[j] + (1-a) * y[j]
+   }
+   return(y)
+}
+Exponential_Smoothing_with_Trend <- function(x, a, b, f, l) {
+   k <- length(x)
+   y <- vector("double", length = k + 1)
+   LT <- vector("double", length = k + 1)
+   ET <- vector("double", length = k + 1)
+   y[1] <- f + l
+   LT[1] <- a * (x[1] - f) + (1-a) * (y[1] - f)
+   ET[1] <- b * LT[1] + (1-b) * l
+   ub_es = k + 1
+   for(i in 2:k) {
+      j <- i - 1
+      y[i] <- a * x[j] + (1-a) * y[j] + ET[j]
+      LT[i] <- a * (x[i] - x[j]) + (1-a) * (y[i] - y[j])
+      ET[i] <- b * LT[i] + (1-b) * ET[j]
+   }
+   y[ub_es] <- a * x[k] + (1-a) * y[k] + ET[k]
+   return(y)
+}
+Mean_Absolute_Deviation <- function(x, y, s) {
+   k <- length(x)
+   Sum_E <- 0
+   for(i in s:k) {
+      Sum_E <- Sum_E + abs(x[i] - y[i])
+   }
+   MAD <- Sum_E / (k - s + 1)
+   return(MAD)
+}
+Mean_Square_Error <- function(x, y, s) {
+   k <- length(x)
+   Sum_E <- 0
+   for(i in s:k) {
+      Sum_E <- Sum_E + (x[i] - y[i])^2
+   }
+   MSE <- Sum_E / (k - s + 1)
+   return(MSE)
+}
+Mean_Absolute_Percentage_Error <- function(x, y, s) {
+   k <- length(x)
+   Sum_E <- 0
+   for(i in s:k) {
+      if(x[i] != 0) {
+         Sum_E <- Sum_E + abs(x[i] - y[i])/x[i]
+      } else {
+         Sum_E <- Sum_E + abs(x[i] - y[i])/mean(x)
+         }  
+     }
+   MAPE <- Sum_E / (k - s + 1) * 100
+   return(MAPE)
+}
+```
+
+#20.1
+```{r}
+library("readxl")
+myfile_ <- read_xlsx("Xr20-01.xlsx")
+Enrollment <- myfile_$`Time series`
+Seminar <- seq(1:12)
+n <- 12
+MV_y <- Moving_Average(Enrollment, 3)
+MV_y[MV_y == 0] <- NA
+plot(Seminar, Enrollment, col = "red", main = "Forecast", xlab = "Period", ylab = "Time series", xlim=range(Seminar, Seminar+1), ylim=range(Enrollment,0))
+lines(Seminar, Enrollment, type="o", col = "blue")
+lines(MV_y, type="o", col = "red")
+MV_y
+```
+The forecast of the next period is 39.6667
+
+##EST
+```{r}
+EST_y <- Exponential_Smoothing_with_Trend(Enrollment, 0.8, 0.2, 42, 1)
+EST_y[EST_y == 0] <- NA
+plot(Seminar, Enrollment, col = "red", main = "Forecast", xlab = "Period", ylab = "Time series", xlim=range(Seminar, Seminar+1), ylim=range(Enrollment,0))
+lines(Seminar, Enrollment, type="o", col = "blue")
+lines(EST_y, type="o", col = "red")
+EST_y
+```
+the forecast of the next period is 30.15460.
+
+##Comparing three forecasting methods.
+```{r}
+ES_y<-Exponential_Smoothing(Enrollment, 0.8)
+plot(Seminar, Enrollment, col = "red", main = "Forecast", xlab = "Period", ylab = "Time series", xlim=range(Seminar, Seminar+1), ylim=range(Enrollment,0))
+lines(Seminar, Enrollment, type="o", col = "blue")
+lines(ES_y, type="o", col = "red")
+MV_MAD <- Mean_Absolute_Deviation(Enrollment, MV_y, 4)
+MV_MSE <- Mean_Square_Error(Enrollment, MV_y, 4)
+MV_MAPE <- Mean_Absolute_Percentage_Error(Enrollment, MV_y, 4)
+ES_MAD <- Mean_Absolute_Deviation(Enrollment, ES_y, 4)
+ES_MSE <- Mean_Square_Error(Enrollment, ES_y, 4)
+ES_MAPE <- Mean_Absolute_Percentage_Error(Enrollment, ES_y, 4)
+EST_MAD <- Mean_Absolute_Deviation(Enrollment, EST_y, 4)
+EST_MSE <- Mean_Square_Error(Enrollment, EST_y, 4)
+EST_MAPE <- Mean_Absolute_Percentage_Error(Enrollment, EST_y, 4)
+Error_M <- matrix(nrow = 3, ncol = 3)
+colnames(Error_M) = c("MV", "ES", "EST")
+rownames(Error_M) = c("MAD", "MSE", "MAPE")
+Error_M[1,1] <- MV_MAD
+Error_M[1,2] <- ES_MAD
+Error_M[1,3] <- EST_MAD
+Error_M[2,1] <- MV_MSE
+Error_M[2,2] <- ES_MSE
+Error_M[2,3] <- EST_MSE
+Error_M[3,1] <- MV_MAPE
+Error_M[3,2] <- ES_MAPE
+Error_M[3,3] <- EST_MAPE
+ES_y
+cat("\n")
+Error_M
+```
+According to the result, of all forecasting methods upon, ES is the best.
+
+#20.7
+```{r}
+myfile_ <- read_xlsx("Xr20-07.xlsx")
+Enrollment <- myfile_$`Time series`
+Seminar <- seq(1:10)
+n <- 10
+MV_y <- Moving_Average(Enrollment, 3)
+MV_y[MV_y == 0] <- NA
+plot(Seminar, Enrollment, col = "red", main = "Forecast", xlab = "Period", ylab = "Time series", xlim=range(Seminar, Seminar+1), ylim=range(Enrollment,0))
+lines(Seminar, Enrollment, type="o", col = "blue")
+lines(MV_y, type="o", col = "red")
+MV_y
+```
+The forecast of the next period is 19.33333
+
+##EST
+```{r}
+EST_y <- Exponential_Smoothing_with_Trend(Enrollment, 0.8, 0.2, 18, 2)
+EST_y[EST_y == 0] <- NA
+plot(Seminar, Enrollment, col = "red", main = "Forecast", xlab = "Period", ylab = "Time series", xlim=range(Seminar, Seminar+1), ylim=range(Enrollment,0))
+lines(Seminar, Enrollment, type="o", col = "blue")
+lines(EST_y, type="o", col = "red")
+EST_y
+```
+the forecast of the next period is 15.33831.
+
+##Comparing three forecasting methods.
+```{r}
+ES_y<-Exponential_Smoothing(Enrollment, 0.8)
+plot(Seminar, Enrollment, col = "red", main = "Forecast", xlab = "Period", ylab = "Time series", xlim=range(Seminar, Seminar+1), ylim=range(Enrollment,0))
+lines(Seminar, Enrollment, type="o", col = "blue")
+lines(ES_y, type="o", col = "red")
+MV_MAD <- Mean_Absolute_Deviation(Enrollment, MV_y, 4)
+MV_MSE <- Mean_Square_Error(Enrollment, MV_y, 4)
+MV_MAPE <- Mean_Absolute_Percentage_Error(Enrollment, MV_y, 4)
+ES_MAD <- Mean_Absolute_Deviation(Enrollment, ES_y, 4)
+ES_MSE <- Mean_Square_Error(Enrollment, ES_y, 4)
+ES_MAPE <- Mean_Absolute_Percentage_Error(Enrollment, ES_y, 4)
+EST_MAD <- Mean_Absolute_Deviation(Enrollment, EST_y, 4)
+EST_MSE <- Mean_Square_Error(Enrollment, EST_y, 4)
+EST_MAPE <- Mean_Absolute_Percentage_Error(Enrollment, EST_y, 4)
+Error_M <- matrix(nrow = 3, ncol = 3)
+colnames(Error_M) = c("MV", "ES", "EST")
+rownames(Error_M) = c("MAD", "MSE", "MAPE")
+Error_M[1,1] <- MV_MAD
+Error_M[1,2] <- ES_MAD
+Error_M[1,3] <- EST_MAD
+Error_M[2,1] <- MV_MSE
+Error_M[2,2] <- ES_MSE
+Error_M[2,3] <- EST_MSE
+Error_M[3,1] <- MV_MAPE
+Error_M[3,2] <- ES_MAPE
+Error_M[3,3] <- EST_MAPE
+ES_y
+cat("\n")
+Error_M
+```
+According to the result, of all forecasting methods upon, 3-MA is the best.
